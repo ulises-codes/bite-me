@@ -1,6 +1,10 @@
 {
   "version": "0.1.0",
   "license": "MIT",
+  "repository": "git://github.com/ulises-codes/bite-me.git",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
