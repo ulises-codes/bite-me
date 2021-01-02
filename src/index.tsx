@@ -5,10 +5,10 @@ type GameProps = {
   dingSrc?: string;
   gameOverSrc?: string;
   style?: { backgroundColor?: string };
-  height: number;
-  width: number;
+  height?: number;
+  width?: number;
   snakeStyle?: {
-    color: string;
+    color: string | string[];
   };
   foodColor?: string;
   foodImage: string;
@@ -45,10 +45,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   private initPosition() {
     const size = this.SNAKE_SIZE;
 
-    const startX = Math.floor(Math.random() * (this.props.width / size)) * size;
+    const startX =
+      Math.floor(Math.random() * (this.CANVAS_WIDTH / size)) * size;
 
     const startY =
-      Math.floor(Math.random() * (this.props.height / size)) * size;
+      Math.floor(Math.random() * (this.CANVAS_HEIGHT / size)) * size;
 
     return [
       [startX, startY],
@@ -62,13 +63,13 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     const startX =
       Math.floor(
         Math.random() *
-          (this.props.width / size - this.FOOD_SIZE / (this.FOOD_SIZE - size))
+          (this.CANVAS_WIDTH / size - this.FOOD_SIZE / (this.FOOD_SIZE - size))
       ) * size;
 
     const startY =
       Math.floor(
         Math.random() *
-          (this.props.height / size - this.FOOD_SIZE / (this.FOOD_SIZE - size))
+          (this.CANVAS_HEIGHT / size - this.FOOD_SIZE / (this.FOOD_SIZE - size))
       ) * size;
 
     return [startX, startY];
@@ -76,7 +77,13 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
   SNAKE_SIZE = 20;
   FOOD_SIZE = 40;
-  SNAKE_FILL = this.props.snakeStyle?.color ?? '#2a2a2a';
+  SNAKE_FILL =
+    typeof this.props.snakeStyle?.color === 'string'
+      ? this.props.snakeStyle.color
+      : '#2a2a2a';
+
+  CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
+  CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;
 
   timerId?: NodeJS.Timer;
   keyPressed: string[] = [];
@@ -107,8 +114,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   private gameOverRef = React.createRef<HTMLAudioElement>();
 
   private clearCanvas() {
-    const { height: canvasHeight, width: canvasWidth } = this.props;
-    this.canvasContext().clearRect(0, 0, canvasHeight, canvasWidth);
+    this.canvasContext().clearRect(0, 0, this.CANVAS_HEIGHT, this.CANVAS_WIDTH);
   }
 
   private canvasContext() {
@@ -121,26 +127,26 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     context.beginPath();
     const textSize = context.measureText(text).width;
 
-    context.fillText(text, this.props.width / 2 - Math.round(textSize / 2), y);
+    context.fillText(text, this.CANVAS_WIDTH / 2 - Math.round(textSize / 2), y);
   };
 
   drawTitlePage() {
     const context = this.canvasContext();
 
-    const title = 'BITE ME';
-
     context.fillStyle = this.props.text?.color ?? '#2a2a2a';
 
+    const verticalCenter = this.CANVAS_HEIGHT / 2;
+
     context.font = '40px courier';
-    this.drawText(title, 50);
+    this.drawText('BITE ME', verticalCenter - 10);
 
     context.fillStyle = '#2a2a2a';
     context.font = '16px courier';
-    this.drawText('A snake game', 75);
+    this.drawText('A snake game', verticalCenter + 20);
 
     context.fillStyle = this.props.text?.color ?? '#2a2a2a';
 
-    this.drawText('Press S to Begin', this.props.height / 2);
+    this.drawText('Press SPACE to Begin', verticalCenter + 60);
   }
 
   drawSnake(newCoordinates?: GameState['coordinates']) {
@@ -158,11 +164,19 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     const size = this.SNAKE_SIZE;
 
-    context.fillStyle = this.SNAKE_FILL;
+    // context.fillStyle = this.SNAKE_FILL;
     context.strokeStyle = this.props.style?.backgroundColor ?? 'white';
     context.lineWidth = 2;
 
-    coordinates.forEach(([x, y]) => {
+    const color = this.props.snakeStyle?.color;
+
+    coordinates.forEach(([x, y], i) => {
+      if (typeof color === 'string' || !color) {
+        context.fillStyle = this.SNAKE_FILL;
+      } else {
+        context.fillStyle = color[i % color.length];
+      }
+
       context.fillRect(x, y, size, size);
       context.strokeRect(x, y, size, size);
     });
@@ -173,8 +187,8 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     const { coordinates, direction, step } = this.state;
 
-    const canvasHeight = this.props.height;
-    const canvasWidth = this.props.width;
+    const canvasHeight = this.CANVAS_HEIGHT;
+    const canvasWidth = this.CANVAS_WIDTH;
 
     const [lastX, lastY] = coordinates[coordinates.length - 1];
     const [firstX, firstY] = coordinates[0];
@@ -313,8 +327,8 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     const { coordinates } = this.state;
     const context = this.canvasContext();
 
-    for (let i = 0; i < this.props.width; i += size) {
-      for (let j = 0; j < this.props.height; j += size) {
+    for (let i = 0; i < this.CANVAS_WIDTH; i += size) {
+      for (let j = 0; j < this.CANVAS_HEIGHT; j += size) {
         if (coordinates.some(([x, y]) => x === i && y === j)) {
           continue;
         }
@@ -388,23 +402,25 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     this.clearCanvas();
 
+    const verticalCenter = this.CANVAS_HEIGHT / 2;
+
     context.font = '40px courier';
     context.fillStyle = this.props.text?.gameOverColor ?? '#F26463';
-    this.drawText('GAME OVER', 50);
+    this.drawText('GAME OVER', verticalCenter - 10);
 
     context.font = '16px courier';
     context.fillStyle = this.props.text?.color ?? '#2a2a2a';
-    this.drawText(`Score: ${this.state.score}`, 80);
+    this.drawText(`Score: ${this.state.score}`, verticalCenter + 20);
 
     context.font = '16px courier';
     context.fillStyle = this.props.text?.color ?? '#2a2a2a';
-    this.drawText('Press R to Restart', this.props.height / 2);
+    this.drawText('Press SPACE to Restart', verticalCenter + 60);
   }
 
   startTimer(reset?: boolean) {
     this.timerId = setInterval(
       () => this.advanceSnake(),
-      reset ? 200 : Math.max(20, 200 - this.state.score * 5)
+      reset ? 150 : Math.max(20, 150 - this.state.score * 5)
     );
   }
 
@@ -483,6 +499,8 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   }
 
   handleKeys(e: React.KeyboardEvent<HTMLCanvasElement>): void {
+    e.preventDefault();
+
     const { direction } = this.state;
 
     this.keyPressed.push(e.key);
@@ -516,13 +534,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
       case 'q':
         this.quit();
         break;
-      case 'r':
-        this.reset();
-        break;
-      case 's':
-        this.reset();
-        break;
       case ' ' /* Space */:
+        this.reset();
+        break;
+
+      case 'p':
         if (this.timerId) {
           this.stopTimer();
           this.setState({ playing: false });
@@ -570,10 +586,15 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     const { muted } = this.state;
 
     return (
-      <div>
+      <div
+        style={{
+          height: this.CANVAS_HEIGHT,
+          width: this.CANVAS_WIDTH,
+        }}
+      >
         <canvas
-          height={this.props.height}
-          width={this.props.width}
+          height={this.CANVAS_HEIGHT}
+          width={this.CANVAS_WIDTH}
           ref={this.canvas}
           style={{ backgroundColor: style?.backgroundColor, outline: 'none' }}
           tabIndex={1}
