@@ -18,6 +18,9 @@ const App = () => {
         dingSrc={DingURL}
         gameOverSrc={GameOverURL}
         text={{ color: '#F1DD6D' }}
+        snakeStyle={{
+          color: ['#BF43A1', '#F26463', '#F1DD6D', '#2BACB3'],
+        }}
       />
     </div>
   );
