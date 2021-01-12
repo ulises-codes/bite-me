@@ -27,6 +27,7 @@ type GameState = {
   muted: boolean;
   snakeSize: number;
   step: number;
+  touch?: number[];
   volume: number;
 };
 const DEFAULT_HEIGHT = 300;
@@ -102,6 +103,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
       playing: false,
       snakeSize: this.SNAKE_SIZE * 2,
       step: this.SNAKE_SIZE,
+      touch: undefined,
       volume: 0.5,
     };
     this.handleKeys = this.handleKeys.bind(this);
@@ -111,7 +113,6 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
   private audioRef = React.createRef<HTMLAudioElement>();
   private dingRef = React.createRef<HTMLAudioElement>();
-  private gameOverRef = React.createRef<HTMLAudioElement>();
 
   private clearCanvas() {
     this.canvasContext().clearRect(0, 0, this.CANVAS_HEIGHT, this.CANVAS_WIDTH);
@@ -130,6 +131,39 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     context.fillText(text, this.CANVAS_WIDTH / 2 - Math.round(textSize / 2), y);
   };
 
+  drawInstructionsPage() {
+    this.clearCanvas();
+    const context = this.canvasContext();
+
+    context.fillStyle = this.props.text?.color ?? '#2a2a2a';
+
+    context.font = '40px courier';
+    this.drawText('HOW TO PLAY', 45);
+
+    context.fillStyle = '#2a2a2a';
+
+    context.font = '16px courier';
+
+    this.drawText('Use the arrows on your', 95);
+    this.drawText('keypad or swipe to move', 110);
+    this.drawText('the snake along.', 125);
+
+    this.drawText('Eat the food—a picture of my', 150);
+    this.drawText('head that my wife hates–', 165);
+    this.drawText('without crashing into the', 180);
+    this.drawText('walls or yourself!', 195);
+
+    context.fillStyle = this.props.text?.color ?? '#2a2a2a';
+
+    this.drawText('Key combinations: ', 225);
+
+    context.fillStyle = '#2a2a2a';
+    this.drawText('start: SPACE', 240);
+    this.drawText('quit: q', 255);
+    this.drawText('mute: m', 270);
+    this.drawText('Volume Down, Up: 2, 1', 285);
+  }
+
   drawTitlePage() {
     const context = this.canvasContext();
 
@@ -146,7 +180,12 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     context.fillStyle = this.props.text?.color ?? '#2a2a2a';
 
-    this.drawText('Press SPACE to Begin', verticalCenter + 60);
+    this.drawText('Press SPACE or Tap', verticalCenter + 60);
+    this.drawText('to Begin', verticalCenter + 85);
+
+    context.fillStyle = '#2a2a2a';
+    this.drawText('Press h or tap with two', verticalCenter + 120);
+    this.drawText('fingers for help', verticalCenter + 135);
   }
 
   drawSnake(newCoordinates?: GameState['coordinates']) {
@@ -164,7 +203,6 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     const size = this.SNAKE_SIZE;
 
-    // context.fillStyle = this.SNAKE_FILL;
     context.strokeStyle = this.props.style?.backgroundColor ?? 'white';
     context.lineWidth = 2;
 
@@ -183,8 +221,6 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   }
 
   advanceSnake() {
-    // if (!this.state.playing) return;
-
     const { coordinates, direction, step } = this.state;
 
     const canvasHeight = this.CANVAS_HEIGHT;
@@ -339,6 +375,12 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
   eatFood() {
     let [newX, newY] = this.initFoodPosition();
+
+    if (this.dingRef.current && this.props.dingSrc) {
+      this.dingRef.current.currentTime = 0;
+      this.dingRef.current?.play().catch(() => null);
+    }
+
     const foodSize = this.FOOD_SIZE;
     const snakeSize = this.SNAKE_SIZE;
 
@@ -377,7 +419,6 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
       [newX, newY] = this.initFoodPosition();
     }
 
-    this.dingRef.current?.play();
     this.clearFood();
 
     this.drawFood(newX, newY);
@@ -394,10 +435,13 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   gameOver() {
     if (!this.state.playing) return;
 
+    // Switch audio to game over sound
+    if (this.audioRef.current && this.props.gameOverSrc) {
+      this.audioRef.current.src = this.props.gameOverSrc;
+      this.audioRef.current.play().catch(() => null);
+    }
+
     const context = this.canvasContext();
-
-    this.gameOverRef.current?.play();
-
     this.quit();
 
     this.clearCanvas();
@@ -414,7 +458,9 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     context.font = '16px courier';
     context.fillStyle = this.props.text?.color ?? '#2a2a2a';
-    this.drawText('Press SPACE to Restart', verticalCenter + 60);
+
+    this.drawText('Press SPACE or Tap', verticalCenter + 60);
+    this.drawText('to Begin', verticalCenter + 85);
   }
 
   startTimer(reset?: boolean) {
@@ -451,8 +497,12 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
       score: 0,
     });
 
+    if (this.props.dingSrc && this.dingRef.current) {
+      this.dingRef.current.src = this.props.dingSrc;
+    }
+
     if (this.props.audioSrc && this.audioRef.current) {
-      this.audioRef.current.currentTime = 0;
+      this.audioRef.current.src = this.props.audioSrc;
       this.audioRef.current.play();
     }
 
@@ -469,17 +519,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
       playing: false,
     });
 
-    this.audioRef.current?.pause();
-
     this.stopTimer();
   }
 
   handleVolumeChange(direction: 1 | -1 | 0, newVol?: number) {
-    if (
-      !this.audioRef.current ||
-      !this.dingRef.current ||
-      !this.gameOverRef.current
-    ) {
+    if (!this.audioRef.current || !this.dingRef.current) {
       return;
     }
 
@@ -495,7 +539,6 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     this.audioRef.current.volume = newVolume;
     this.dingRef.current.volume = newVolume;
-    this.gameOverRef.current.volume = newVolume;
   }
 
   handleKeys(e: React.KeyboardEvent<HTMLCanvasElement>): void {
@@ -530,6 +573,12 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
           this.setState({ direction: 'n' });
         }
 
+        break;
+
+      case 'h':
+        if (!this.state.playing) {
+          this.drawInstructionsPage();
+        }
         break;
       case 'q':
         this.quit();
@@ -582,8 +631,8 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   }
 
   render() {
-    const { audioSrc, dingSrc, gameOverSrc, style } = this.props;
-    const { muted } = this.state;
+    const { audioSrc, dingSrc, style } = this.props;
+    const { muted, playing } = this.state;
 
     return (
       <div
@@ -596,20 +645,84 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
           height={this.CANVAS_HEIGHT}
           width={this.CANVAS_WIDTH}
           ref={this.canvas}
-          style={{ backgroundColor: style?.backgroundColor, outline: 'none' }}
+          style={{
+            backgroundColor: style?.backgroundColor,
+            outline: 'none',
+            touchAction: 'none',
+          }}
           tabIndex={1}
           onKeyDown={this.handleKeys}
           onKeyUp={e => {
             this.keyPressed = this.keyPressed.filter(key => key !== e.key);
           }}
+          onTouchStart={e => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (this.state.playing) {
+              this.setState({
+                touch: [e.touches[0].clientX, e.touches[0].clientY],
+              });
+            }
+          }}
+          onTouchMove={e => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchEnd={e => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Show help page on two-finger tap
+            if (!this.state.playing && e.changedTouches.length === 2) {
+              return this.drawInstructionsPage();
+            }
+
+            if (!this.state.playing) return this.reset();
+
+            if (!this.state.touch) return;
+            const { direction } = this.state;
+
+            const diffX = e.changedTouches[0].clientX - this.state.touch[0];
+            const diffY = e.changedTouches[0].clientY - this.state.touch[1];
+
+            const diff =
+              Math.abs(diffX) > Math.abs(diffY)
+                ? diffX
+                : Math.abs(diffY) > Math.abs(diffX)
+                ? diffY
+                : 0;
+
+            if (diff === 0) return;
+
+            if (diff === diffX && direction !== 'e' && direction !== 'w') {
+              if (diffX < 0) {
+                return this.setState({ direction: 'w', touch: undefined });
+              } else {
+                return this.setState({ direction: 'e', touch: undefined });
+              }
+            } else if (
+              diff === diffY &&
+              direction !== 'n' &&
+              direction !== 's'
+            ) {
+              if (diffY < 0) {
+                return this.setState({ direction: 'n', touch: undefined });
+              } else {
+                return this.setState({ direction: 's', touch: undefined });
+              }
+            }
+          }}
         />
         {audioSrc && (
-          <audio src={audioSrc} loop muted={muted} ref={this.audioRef} />
+          <audio
+            src={audioSrc}
+            loop={playing}
+            muted={muted}
+            ref={this.audioRef}
+          />
         )}
-        {dingSrc && <audio src={dingSrc} muted={muted} ref={this.dingRef} />}
-        {gameOverSrc && (
-          <audio src={gameOverSrc} muted={muted} ref={this.gameOverRef} />
-        )}
+        {dingSrc && <audio muted={muted} ref={this.dingRef} />}
       </div>
     );
   }
