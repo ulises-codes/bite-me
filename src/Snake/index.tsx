@@ -1,35 +1,7 @@
+/// <reference path="../index.d.ts" />
+
 import * as React from 'react';
 
-type GameProps = {
-  audioSrc?: string;
-  dingSrc?: string;
-  gameOverSrc?: string;
-  style?: { backgroundColor?: string };
-  height?: number;
-  width?: number;
-  snakeStyle?: {
-    color: string | string[];
-  };
-  foodColor?: string;
-  foodImage: string;
-  text: {
-    gameOverColor?: string;
-    color: string;
-  };
-};
-
-type GameState = {
-  coordinates: number[][];
-  direction: 'n' | 'e' | 's' | 'w';
-  score: number;
-  playing: boolean;
-  foodPosition: number[];
-  muted: boolean;
-  snakeSize: number;
-  step: number;
-  touch?: number[];
-  volume: number;
-};
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
 
@@ -42,6 +14,16 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     height: DEFAULT_HEIGHT,
     width: DEFAULT_WIDTH,
   };
+
+  timerId?: NodeJS.Timer;
+  keyPressed: string[] = [];
+  foodImg: HTMLImageElement;
+
+  SNAKE_FILL: string;
+  SNAKE_SIZE: number;
+  FOOD_SIZE: number;
+  CANVAS_WIDTH: number;
+  CANVAS_HEIGHT: number;
 
   private initPosition() {
     const size = this.SNAKE_SIZE;
@@ -76,23 +58,18 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     return [startX, startY];
   }
 
-  SNAKE_SIZE = 20;
-  FOOD_SIZE = 40;
-  SNAKE_FILL =
-    typeof this.props.snakeStyle?.color === 'string'
-      ? this.props.snakeStyle.color
-      : '#2a2a2a';
-
-  CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
-  CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;
-
-  timerId?: NodeJS.Timer;
-  keyPressed: string[] = [];
-  foodImg: HTMLImageElement;
-
   constructor(props: GameProps) {
     super(props);
     this.foodImg = new Image();
+
+    this.CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
+    this.CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;
+    this.SNAKE_SIZE = 20;
+    this.FOOD_SIZE = 40;
+    this.SNAKE_FILL =
+      typeof this.props.snakeStyle?.color === 'string'
+        ? this.props.snakeStyle.color
+        : '#2a2a2a';
 
     this.state = {
       coordinates: this.initPosition(),
@@ -100,8 +77,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
       score: 0,
       foodPosition: this.initFoodPosition(),
       muted: false,
-      playing: false,
-      snakeSize: this.SNAKE_SIZE * 2,
+      status: 'title',
       step: this.SNAKE_SIZE,
       touch: undefined,
       volume: 0.5,
@@ -333,23 +309,37 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   drawFood(x: number, y: number) {
     const padding = 4;
 
-    const width = this.FOOD_SIZE - padding;
-    const height = this.FOOD_SIZE - padding;
-
     const context = this.canvasContext();
 
-    context.drawImage(
-      this.foodImg,
-      x + padding / 2,
-      y + padding / 2,
-      width,
-      height
-    );
+    if (!this.props.food.src) {
+      const radius = this.FOOD_SIZE / 2;
+      context.beginPath();
+      context.ellipse(
+        x + radius,
+        y + radius,
+        radius - padding * 2,
+        radius - padding * 2,
+        0,
+        0,
+        2 * Math.PI
+      );
+      context.fill();
+    } else {
+      const foodSize = this.FOOD_SIZE - padding;
+
+      context.drawImage(
+        this.foodImg,
+        x + padding / 2,
+        y + padding / 2,
+        foodSize,
+        foodSize
+      );
+    }
 
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = 'high';
 
-    context.fillStyle = this.props.foodColor ?? 'red';
+    context.fillStyle = this.props.food.color ?? 'red';
   }
 
   initFood() {
@@ -433,7 +423,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   }
 
   gameOver() {
-    if (!this.state.playing) return;
+    if (this.state.status !== 'playing') return;
 
     // Switch audio to game over sound
     if (this.audioRef.current && this.props.gameOverSrc) {
@@ -493,7 +483,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     this.setState({
       coordinates: newCoordinates ?? this.state.coordinates,
       direction: 'e',
-      playing: true,
+      status: 'playing',
       score: 0,
     });
 
@@ -513,10 +503,10 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   }
 
   quit() {
-    if (!this.state.playing) return;
+    if (this.state.status !== 'playing') return;
 
     this.setState({
-      playing: false,
+      status: 'playing',
     });
 
     this.stopTimer();
@@ -550,34 +540,51 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     switch (this.keyPressed[0]) {
       case 'ArrowDown':
-        if (this.state.playing && direction !== 'n' && direction !== 's') {
+        if (
+          this.state.status === 'playing' &&
+          direction !== 'n' &&
+          direction !== 's'
+        ) {
           this.setState({ direction: 's' });
         }
 
         break;
       case 'ArrowRight':
-        if (this.state.playing && direction !== 'w' && direction !== 'e') {
+        if (
+          this.state.status === 'playing' &&
+          direction !== 'w' &&
+          direction !== 'e'
+        ) {
           this.setState({ direction: 'e' });
         }
 
         break;
 
       case 'ArrowLeft':
-        if (this.state.playing && direction !== 'e' && direction !== 'w') {
+        if (
+          this.state.status === 'playing' &&
+          direction !== 'e' &&
+          direction !== 'w'
+        ) {
           this.setState({ direction: 'w' });
         }
 
         break;
       case 'ArrowUp':
-        if (this.state.playing && direction !== 's' && direction !== 'n') {
+        if (
+          this.state.status === 'playing' &&
+          direction !== 's' &&
+          direction !== 'n'
+        ) {
           this.setState({ direction: 'n' });
         }
 
         break;
 
       case 'h':
-        if (!this.state.playing) {
+        if (['title', 'gameover', 'instructions'].includes(this.state.status)) {
           this.drawInstructionsPage();
+          this.setState({ status: 'instructions' });
         }
         break;
       case 'q':
@@ -590,11 +597,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
       case 'p':
         if (this.timerId) {
           this.stopTimer();
-          this.setState({ playing: false });
+          this.setState({ status: 'paused' });
           this.audioRef.current?.pause();
         } else {
           this.startTimer();
-          this.setState({ playing: true });
+          this.setState({ status: 'playing' });
           this.audioRef.current?.play();
         }
         break;
@@ -623,7 +630,9 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     this.handleVolumeChange(0, 0.5);
 
-    this.foodImg.src = this.props.foodImage;
+    if (this.props.food.src) {
+      this.foodImg.src = this.props.food.src;
+    }
   }
 
   componentWillUnmount() {
@@ -632,7 +641,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
   render() {
     const { audioSrc, dingSrc, style } = this.props;
-    const { muted, playing } = this.state;
+    const { muted, status } = this.state;
 
     return (
       <div
@@ -659,7 +668,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
             e.preventDefault();
             e.stopPropagation();
 
-            if (this.state.playing) {
+            if (status === 'playing') {
               this.setState({
                 touch: [e.touches[0].clientX, e.touches[0].clientY],
               });
@@ -674,11 +683,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
             e.stopPropagation();
 
             // Show help page on two-finger tap
-            if (!this.state.playing && e.changedTouches.length === 2) {
+            if (status !== 'playing' && e.changedTouches.length === 2) {
               return this.drawInstructionsPage();
             }
 
-            if (!this.state.playing) return this.reset();
+            if (status !== 'playing') return this.reset();
 
             if (!this.state.touch) return;
             const { direction } = this.state;
@@ -697,9 +706,15 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
             if (diff === diffX && direction !== 'e' && direction !== 'w') {
               if (diffX < 0) {
-                return this.setState({ direction: 'w', touch: undefined });
+                return this.setState({
+                  direction: 'w',
+                  touch: undefined,
+                });
               } else {
-                return this.setState({ direction: 'e', touch: undefined });
+                return this.setState({
+                  direction: 'e',
+                  touch: undefined,
+                });
               }
             } else if (
               diff === diffY &&
@@ -707,9 +722,15 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
               direction !== 's'
             ) {
               if (diffY < 0) {
-                return this.setState({ direction: 'n', touch: undefined });
+                return this.setState({
+                  direction: 'n',
+                  touch: undefined,
+                });
               } else {
-                return this.setState({ direction: 's', touch: undefined });
+                return this.setState({
+                  direction: 's',
+                  touch: undefined,
+                });
               }
             }
           }}
@@ -717,7 +738,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
         {audioSrc && (
           <audio
             src={audioSrc}
-            loop={playing}
+            loop={status === 'playing'}
             muted={muted}
             ref={this.audioRef}
           />
