@@ -83,3 +83,10 @@ interface DrawSnake {
   currentCoordinates: GameState['coordinates'];
   newCoordinates?: GameState['coordinates'];
 }
+
+interface InitFoodPositionProps {
+  snakeSize: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  foodSize: number;
+}

@@ -1,6 +1,7 @@
 /// <reference path="../index.d.ts" />
 
 import * as React from 'react';
+import { initFoodPosition } from '../helper';
 
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
@@ -40,24 +41,6 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     ];
   }
 
-  private initFoodPosition() {
-    const size = this.SNAKE_SIZE;
-
-    const startX =
-      Math.floor(
-        Math.random() *
-          (this.CANVAS_WIDTH / size - this.FOOD_SIZE / (this.FOOD_SIZE - size))
-      ) * size;
-
-    const startY =
-      Math.floor(
-        Math.random() *
-          (this.CANVAS_HEIGHT / size - this.FOOD_SIZE / (this.FOOD_SIZE - size))
-      ) * size;
-
-    return [startX, startY];
-  }
-
   constructor(props: GameProps) {
     super(props);
     this.foodImg = new Image();
@@ -75,7 +58,12 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
       coordinates: this.initPosition(),
       direction: 'e',
       score: 0,
-      foodPosition: this.initFoodPosition(),
+      foodPosition: initFoodPosition({
+        snakeSize: this.SNAKE_SIZE,
+        canvasHeight: this.CANVAS_HEIGHT,
+        canvasWidth: this.CANVAS_WIDTH,
+        foodSize: this.FOOD_SIZE,
+      }),
       muted: false,
       status: 'title',
       step: this.SNAKE_SIZE,
@@ -364,7 +352,12 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   }
 
   eatFood() {
-    let [newX, newY] = this.initFoodPosition();
+    let [newX, newY] = initFoodPosition({
+      snakeSize: this.SNAKE_SIZE,
+      canvasHeight: this.CANVAS_HEIGHT,
+      canvasWidth: this.CANVAS_WIDTH,
+      foodSize: this.FOOD_SIZE,
+    });
 
     if (this.dingRef.current && this.props.dingSrc) {
       this.dingRef.current.currentTime = 0;
@@ -406,7 +399,12 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     };
 
     while (checkPosition()) {
-      [newX, newY] = this.initFoodPosition();
+      [newX, newY] = initFoodPosition({
+        snakeSize: this.SNAKE_SIZE,
+        canvasHeight: this.CANVAS_HEIGHT,
+        canvasWidth: this.CANVAS_WIDTH,
+        foodSize: this.FOOD_SIZE,
+      });
     }
 
     this.clearFood();

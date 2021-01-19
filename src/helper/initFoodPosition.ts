@@ -1,5 +1,5 @@
 /// <reference path="../index.d.ts" />
-export function initFoodPosition({
+export default function initFoodPosition({
   snakeSize,
   canvasHeight,
   canvasWidth,

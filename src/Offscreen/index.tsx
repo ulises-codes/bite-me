@@ -3,7 +3,7 @@
 import * as React from 'react';
 import * as Comlink from 'comlink';
 import { Snake } from './worker';
-import { initFoodPosition } from './helper';
+import { initFoodPosition } from '../helper';
 
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;

@@ -1,7 +1,7 @@
 /// <reference path="../index.d.ts" />
 
 import * as Comlink from 'comlink';
-import { initFoodPosition } from './helper';
+import { initFoodPosition } from '../helper';
 
 export class Snake implements SnakeWorker {
   advanceSnake: () => Promise<void>;
