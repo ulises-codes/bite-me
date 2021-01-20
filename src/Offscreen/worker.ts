@@ -1,16 +1,20 @@
-/// <reference path="./index.d.ts" />
+/// <reference path="../types/SnakeTypes.d.ts" />
 
+import * as t from 'bite-me';
 import * as Comlink from 'comlink';
-import { initFoodPosition } from './helper';
+import { initFoodPosition } from '../helper';
 
-export class Snake {
+export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
+  implements t.SnakeWorkerInterface {
+  advanceSnake: () => Promise<void>;
   backgroundColor: string;
   canvasHeight: number;
   canvasWidth: number;
   ctx: OffscreenCanvasRenderingContext2D | null;
   foodColor: string;
   foodImg?: ImageBitmap;
-  foodImgSrc: string;
+  foodImgSrc?: string;
+  foodPadding: number;
   foodSize: number;
   gameOverColor: string;
   keyPressed: string[];
@@ -21,15 +25,22 @@ export class Snake {
   titleColor: string;
   subtitleColor: string;
   timerId?: number;
+  timeoutId?: number;
 
-  constructor(canvas: OffscreenCanvas, props: SnakeProps) {
+  constructor(
+    canvas: OffscreenCanvas,
+    advanceSnake: () => Promise<void>,
+    props: t.SnakeWorkerProps
+  ) {
     this.backgroundColor = props.canvas.backgroundColor;
     this.canvasHeight = props.canvas.height;
     this.canvasWidth = props.canvas.width;
     this.ctx = canvas.getContext('2d');
+    this.advanceSnake = advanceSnake;
     this.gameOverColor = props.text.gameOverColor ?? '#F26463';
-    this.foodColor = props.food.color;
+    this.foodColor = props.food.color ?? '#2a2a2a';
     this.foodImgSrc = props.food.imgSrc;
+    this.foodPadding = 4;
     this.foodSize = props.food.size;
     this.keyPressed = [];
     this.snakeColor = props.snake.color ?? '#2a2a2a';
@@ -44,22 +55,28 @@ export class Snake {
     this.ctx?.clearRect(0, 0, this.canvasHeight, this.canvasWidth);
   }
 
-  drawText = (text: string, y: number, color?: string, font?: string) => {
+  drawText(
+    text: string,
+    y: number,
+    color: string = this.textColor,
+    font: string = '12px courier'
+  ) {
     const context = this.ctx;
 
     if (!context) return;
 
     context.beginPath();
 
-    if (color) context.fillStyle = color;
-    if (font) context.font = font;
+    context.fillStyle = color;
+
+    context.font = font;
 
     const textSize = context.measureText(text).width;
 
     context.fillText(text, this.canvasWidth / 2 - Math.round(textSize / 2), y);
-  };
+  }
 
-  drawTitlePage(coordinates: GameState['coordinates']) {
+  drawTitlePage(coordinates: t.GameState['coordinates']) {
     const context = this.ctx;
     if (!context) return;
 
@@ -107,36 +124,31 @@ export class Snake {
 
     if (!context) return;
 
-    context.fillStyle = this.textColor;
+    this.drawText('HOW TO PLAY', 45, undefined, '40px courier');
 
-    context.font = '40px courier';
-    this.drawText('HOW TO PLAY', 45);
+    this.drawText('Use the arrows on your', 75);
+    this.drawText('keypad or swipe to move', 90);
+    this.drawText('the snake along.', 105);
 
-    context.fillStyle = '#2a2a2a';
+    this.drawText('Eat the food—a picture of my', 130);
+    this.drawText('head that my wife hates–', 145);
+    this.drawText('without crashing into the', 160);
+    this.drawText('walls or yourself!', 175);
 
-    context.font = '16px courier';
+    this.drawText(
+      'Key Combinations: ',
+      225,
+      this.subtitleColor,
+      '14px courier'
+    );
 
-    this.drawText('Use the arrows on your', 95);
-    this.drawText('keypad or swipe to move', 110);
-    this.drawText('the snake along.', 125);
-
-    this.drawText('Eat the food—a picture of my', 150);
-    this.drawText('head that my wife hates–', 165);
-    this.drawText('without crashing into the', 180);
-    this.drawText('walls or yourself!', 195);
-
-    context.fillStyle = this.textColor;
-
-    this.drawText('Key combinations: ', 225);
-
-    context.fillStyle = '#2a2a2a';
     this.drawText('start: SPACE', 240);
     this.drawText('quit: q', 255);
     this.drawText('mute: m', 270);
     this.drawText('Volume Down, Up: 2, 1', 285);
   }
 
-  drawSnake({ currentCoordinates, newCoordinates }: DrawSnake) {
+  drawSnake({ currentCoordinates, newCoordinates }: t.DrawSnake) {
     const context = this.ctx;
 
     let coordinates;
@@ -168,28 +180,39 @@ export class Snake {
     });
   }
 
-  drawFood([x, y]: GameState['foodPosition']) {
-    const padding = 4;
-
-    const width = this.foodSize - padding;
-    const height = this.foodSize - padding;
+  drawFood([x, y]: t.GameState['foodPosition']) {
+    const padding = this.foodPadding;
 
     const context = this.ctx;
 
-    if (!context || !this.foodImg) return;
+    if (!context) return;
 
-    context.drawImage(
-      this.foodImg,
-      x + padding / 2,
-      y + padding / 2,
-      width,
-      height
-    );
+    if (!this.foodImg) {
+      const radius = this.foodSize / 2;
+      context.beginPath();
+      context.ellipse(
+        x + radius,
+        y + radius,
+        radius - padding * 2,
+        radius - padding * 2,
+        0,
+        0,
+        2 * Math.PI
+      );
+      context.fill();
+    } else {
+      const foodSize = this.foodSize - padding;
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
 
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = 'high';
-
-    context.fillStyle = this.foodColor;
+      context.drawImage(
+        this.foodImg,
+        x + padding / 2,
+        y + padding / 2,
+        foodSize,
+        foodSize
+      );
+    }
   }
 
   drawGameOver(score: number, cb: () => void) {
@@ -233,23 +256,25 @@ export class Snake {
     this.ctx.clearRect(x, y, this.snakeSize, this.snakeSize);
   }
 
-  clearFood(coordinates: GameState['coordinates']) {
-    const size = this.snakeSize;
+  clearFood(coordinates: t.GameState['coordinates']) {
     const context = this.ctx;
 
     if (!context) return;
+
+    const size = this.snakeSize;
 
     for (let i = 0; i < this.canvasWidth; i += size) {
       for (let j = 0; j < this.canvasHeight; j += size) {
         if (coordinates.some(([x, y]) => x === i && y === j)) {
           continue;
         }
+
         context.clearRect(i, j, size, size);
       }
     }
   }
 
-  eatFood(coordinates: GameState['coordinates']) {
+  eatFood(coordinates: t.GameState['coordinates']) {
     this.clearFood(coordinates);
 
     const getNewFoodPosition = () =>
@@ -299,29 +324,42 @@ export class Snake {
     return [newX, newY];
   }
 
-  async initGame(snakeCoordinates: GameState['coordinates']) {
-    const blob = await fetch(this.foodImgSrc).then(res => res.blob());
-    this.foodImg = await createImageBitmap(blob);
+  async initGame(snakeCoordinates: t.GameState['coordinates']) {
+    if (this.foodImgSrc) {
+      const blob = await fetch(this.foodImgSrc).then((res) => res.blob());
+      this.foodImg = await createImageBitmap(blob);
+    }
 
     this.drawTitlePage(snakeCoordinates);
   }
 
-  async initFood(foodPosition: GameState['foodPosition']) {
+  async initFood(foodPosition: t.GameState['foodPosition']) {
     // If new game, get position from state; otherwise, create new position
     const [x, y] = foodPosition;
     this.drawFood([x, y]);
   }
 
-  startTimer(cb: StartTimerProps['cb'], interval: number) {
-    this.timerId = setInterval(cb, interval);
+  startTimer() {
+    const cb = () => {
+      if (this.timeoutId) clearTimeout(this.timeoutId);
+
+      this.timeoutId = (setTimeout(async () => {
+        requestAnimationFrame(cb);
+        await this.advanceSnake();
+      }, 75) as unknown) as number;
+    };
+
+    this.timerId = requestAnimationFrame(cb);
   }
 
   stopTimer() {
     if (this.timerId) {
-      clearInterval(this.timerId);
-      this.timerId = undefined;
+      cancelAnimationFrame(this.timerId);
+    }
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
     }
   }
-}
+};
 
-Comlink.expose(Snake);
+Comlink.expose(SnakeWorker);
