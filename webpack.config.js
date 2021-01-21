@@ -32,6 +32,9 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     publicPath: '',
   },
+  optimization: {
+    runtimeChunk: 'single',
+  },
   devtool: false,
   externals: {
     react: 'react',
