@@ -8,12 +8,12 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "typings": "dist/index.d.ts",
+  "typings": "./index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./": "./dist/",
-    "./offscreen": "./dist/offscreen",
-    "./snake": "./dist/snake"
+    ".": "./index.js",
+    "./": "./",
+    "./offscreen": "./offscreen",
+    "./snake": "./snake"
   },
   "files": [
     "dist/*"
