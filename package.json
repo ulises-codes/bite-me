@@ -10,7 +10,10 @@
   },
   "typings": "dist/index.d.ts",
   "exports": {
-    "./*": "./dist/*"
+    ".": "./dist/index.js",
+    "./": "./dist/",
+    "./offscreen": "./dist/offscreen",
+    "./snake": "./dist/snake"
   },
   "files": [
     "dist/*"

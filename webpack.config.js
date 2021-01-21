@@ -30,11 +30,7 @@ module.exports = {
     library: 'biteMe',
     libraryTarget: 'umd',
     path: path.resolve(__dirname, 'dist'),
-  },
-  optimization: {
-    splitChunks: {
-      chunks: 'all',
-    },
+    publicPath: '/',
   },
   devtool: false,
   externals: {
