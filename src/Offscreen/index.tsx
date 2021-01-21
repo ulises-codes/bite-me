@@ -1,14 +1,15 @@
-import * as t from '../types/bite-me';
+import * as t from '../bite-me';
 
 import * as React from 'react';
 import * as Comlink from 'comlink';
 
-import { initFoodPosition } from '../helper';
-
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
 
-export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
+export default class SnakeGame extends React.Component<
+  t.GameProps,
+  t.GameState
+> {
   static defaultProps = {
     style: {
       backgroundColor: '#fafafa',
@@ -20,6 +21,9 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
 
   keyPressed: string[];
   foodImg: HTMLImageElement;
+  initFoodPosition: (
+    props: t.InitFoodPositionProps
+  ) => Promise<t.GameState['foodPosition']>;
   snakeInstance?: Comlink.Remote<t.SnakeWorkerInterface>;
   worker: Worker;
 
@@ -59,16 +63,18 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
         ? this.props.snakeStyle.color
         : '#2a2a2a';
 
+    this.initFoodPosition = async (props: t.InitFoodPositionProps) => {
+      const mod = await import('../helper');
+      const position = mod.initFoodPosition;
+
+      return position(props);
+    };
+
     this.state = {
       coordinates: this.initPosition(),
       direction: 'e',
       score: 0,
-      foodPosition: initFoodPosition({
-        snakeSize: this.SNAKE_SIZE,
-        canvasHeight: this.CANVAS_HEIGHT,
-        canvasWidth: this.CANVAS_WIDTH,
-        foodSize: this.FOOD_SIZE,
-      }),
+      foodPosition: [],
       muted: false,
       status: 'title',
       step: 20,
@@ -452,6 +458,14 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
         }
       );
 
+      this.setState({
+        foodPosition: await this.initFoodPosition({
+          snakeSize: this.SNAKE_SIZE,
+          canvasHeight: this.CANVAS_HEIGHT,
+          canvasWidth: this.CANVAS_WIDTH,
+          foodSize: this.FOOD_SIZE,
+        }),
+      });
       await this.snakeInstance.initGame(this.state.coordinates);
     };
 

@@ -1,4 +1,4 @@
-import * as t from '../types/bite-me';
+import * as t from '../bite-me';
 
 export default function initFoodPosition({
   snakeSize,

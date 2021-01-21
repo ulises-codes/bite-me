@@ -4,23 +4,16 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 module.exports = {
   context: path.resolve(__dirname, 'src'),
   entry: {
+    index: './index.ts',
     offscreen: {
       import: './offscreen/index.tsx',
       filename: './offscreen/index.js',
-      dependOn: ['helper', 'comlink'],
     },
     snake: {
       import: './snake/index.tsx',
       filename: './snake/index.js',
-      dependOn: 'helper',
     },
-    helper: {
-      import: './helper/index.ts',
-      filename: './helper/index.js',
-    },
-    comlink: 'comlink',
   },
-  // devtool: 'inline-source-map',
   module: {
     rules: [
       {
@@ -31,7 +24,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts'],
+    extensions: ['js', '.tsx', '.ts', 'd.ts'],
   },
   output: {
     library: 'biteMe',
@@ -39,14 +32,11 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
   },
   optimization: {
-    concatenateModules: false,
     splitChunks: {
       chunks: 'all',
     },
-    runtimeChunk: {
-      name: (entrypoint) => `runtime~${entrypoint.name}`,
-    },
   },
+  devtool: false,
   externals: {
     react: 'react',
   },

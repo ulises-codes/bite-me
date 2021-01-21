@@ -37,9 +37,14 @@ export interface SnakeWorkerInterface {
   drawGameOver: (score: number, cb: () => void) => void;
   clearPrevPosition: (x: number, y: number) => void;
   clearFood: (coordinates: GameState['coordinates']) => void;
-  eatFood: (coordinates: GameState['coordinates']) => GameState['foodPosition'];
+  eatFood: (
+    coordinates: GameState['coordinates']
+  ) => Promise<GameState['foodPosition']>;
   initGame: (snakeCoordinates: GameState['coordinates']) => void;
   initFood: (foodPosition: GameState['foodPosition']) => void;
+  initFoodPosition: (
+    props: InitFoodPositionProps
+  ) => Promise<GameState['foodPosition']>;
   startTimer: () => void;
   stopTimer: () => void;
 }
@@ -113,5 +118,9 @@ export interface InitFoodPositionProps {
   canvasHeight: number;
   foodSize: number;
 }
+
+export type InitFoodPosition = (
+  props: InitFoodPositionProps
+) => GameState['foodPosition'];
 
 type AdvanceSnake = () => Promise<void>;

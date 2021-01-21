@@ -8,7 +8,7 @@ This is a React Class Component that renders a pretty basic snake game on an HTM
 
 ### Basic Example
 
-        import { SnakeGame } from '@ulises-codes/bite-me/snake'
+        import SnakeGame from '@ulises-codes/bite-me/snake'
 
         import FoodURL from './assets/food.png';
         import AudioURL from './assets/echo.mp3';
@@ -43,7 +43,7 @@ If a browser supports OffscreenCanvas, you can import the OffscreenSnake compone
 
 The OffscreenSnake component accepts the same props as the regular Snake component.
 
-        import { SnakeGame } from '@ulises-codes/bite-me/offscreen'
+        import SnakeGame from '@ulises-codes/bite-me/offscreen'
 
         export default function MyComponent() {
             return (

@@ -1,12 +1,14 @@
-import * as t from '../types/bite-me';
+import * as t from '../bite-me';
 
 import * as React from 'react';
-import { initFoodPosition } from '../helper';
 
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
 
-export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
+export default class SnakeGame extends React.Component<
+  t.GameProps,
+  t.GameState
+> {
   static defaultProps = {
     style: {
       backgroundColor: '#fafafa',
@@ -19,6 +21,9 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
   timerId?: NodeJS.Timer;
   keyPressed: string[] = [];
   foodImg?: HTMLImageElement;
+  initFoodPosition: (
+    props: t.InitFoodPositionProps
+  ) => Promise<t.GameState['foodPosition']>;
 
   SNAKE_FILL: string;
   SNAKE_SIZE: number;
@@ -44,6 +49,12 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
   constructor(props: t.GameProps) {
     super(props);
     this.foodImg = this.props.food.src ? new Image() : undefined;
+    this.initFoodPosition = async (props: t.InitFoodPositionProps) => {
+      const mod = await import('../helper');
+      const position = mod.initFoodPosition;
+
+      return position(props);
+    };
 
     this.CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
     this.CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;
@@ -58,12 +69,7 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
       coordinates: this.initPosition(),
       direction: 'e',
       score: 0,
-      foodPosition: initFoodPosition({
-        snakeSize: this.SNAKE_SIZE,
-        canvasHeight: this.CANVAS_HEIGHT,
-        canvasWidth: this.CANVAS_WIDTH,
-        foodSize: this.FOOD_SIZE,
-      }),
+      foodPosition: [],
       muted: false,
       status: 'title',
       step: this.SNAKE_SIZE,
@@ -335,8 +341,8 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
     }
   }
 
-  eatFood() {
-    let [newX, newY] = initFoodPosition({
+  async eatFood() {
+    let [newX, newY] = await this.initFoodPosition({
       snakeSize: this.SNAKE_SIZE,
       canvasHeight: this.CANVAS_HEIGHT,
       canvasWidth: this.CANVAS_WIDTH,
@@ -383,7 +389,7 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
     };
 
     while (checkPosition()) {
-      [newX, newY] = initFoodPosition({
+      [newX, newY] = await this.initFoodPosition({
         snakeSize: this.SNAKE_SIZE,
         canvasHeight: this.CANVAS_HEIGHT,
         canvasWidth: this.CANVAS_WIDTH,
@@ -459,12 +465,20 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
     this.start(this.initPosition());
   }
 
-  start(newCoordinates?: t.GameState['coordinates']) {
+  async start(newCoordinates?: t.GameState['coordinates']) {
     if (this.timerId) return;
 
     this.clearCanvas();
 
+    const foodPosition = await this.initFoodPosition({
+      snakeSize: this.SNAKE_SIZE,
+      canvasHeight: this.CANVAS_HEIGHT,
+      canvasWidth: this.CANVAS_WIDTH,
+      foodSize: this.FOOD_SIZE,
+    });
+
     this.setState({
+      foodPosition,
       coordinates: newCoordinates ?? this.state.coordinates,
       direction: 'e',
       status: 'playing',
