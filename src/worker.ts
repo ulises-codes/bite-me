@@ -1,7 +1,7 @@
 import * as t from './types/bite-me';
 
 import * as Comlink from 'comlink';
-import { initFoodPosition } from '../helper';
+import { initFoodPosition } from './helper';
 
 export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
   implements t.SnakeWorkerInterface {

@@ -237,11 +237,7 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
     );
   }
 
-<<<<<<< HEAD
-  async quit(newCoordinates: GameState['coordinates']) {
-=======
   async quit(newCoordinates: t.GameState['coordinates']) {
->>>>>>> offscreen
     if (this.state.status !== 'playing' && this.state.status !== 'gameover') {
       return;
     }
