@@ -9,12 +9,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "typings": "./index.d.ts",
-  "exports": {
-    ".": "./index.js",
-    "./": "./",
-    "./offscreen": "./offscreen",
-    "./snake": "./snake"
-  },
+  "module": "./dist/index.js",
   "files": [
     "dist/*"
   ],

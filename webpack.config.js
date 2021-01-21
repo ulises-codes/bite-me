@@ -27,7 +27,7 @@ module.exports = {
     extensions: ['js', '.tsx', '.ts', 'd.ts'],
   },
   output: {
-    library: 'biteMe',
+    library: 'bite-me',
     libraryTarget: 'umd',
     path: path.resolve(__dirname, 'dist'),
     publicPath: '',
