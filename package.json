@@ -10,11 +10,11 @@
   },
   "typings": "dist/types/bite-me.d.ts",
   "exports": {
-    "./offscreen": "./offscreen/index.js",
-    "./snake": "./snake/index.js"
+    "./offscreen": "./dist/offscreen/index.js",
+    "./snake": "./dist/snake/index.js"
   },
   "files": [
-    "dist"
+    "dist/*"
   ],
   "engines": {
     "node": ">=10"
