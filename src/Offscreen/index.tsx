@@ -1,14 +1,14 @@
-/// <reference path="../index.d.ts" />
+import * as t from '../types/bite-me';
 
 import * as React from 'react';
 import * as Comlink from 'comlink';
-import { Snake } from './worker';
+
 import { initFoodPosition } from '../helper';
 
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
 
-export default class SnakeGame extends React.Component<GameProps, GameState> {
+export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
   static defaultProps = {
     style: {
       backgroundColor: '#fafafa',
@@ -20,7 +20,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
   keyPressed: string[];
   foodImg: HTMLImageElement;
-  snakeInstance?: Comlink.Remote<Snake>;
+  snakeInstance?: Comlink.Remote<t.SnakeWorkerInterface>;
   worker: Worker;
 
   SNAKE_FILL: string;
@@ -44,11 +44,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     ];
   }
 
-  constructor(props: GameProps) {
+  constructor(props: t.GameProps) {
     super(props);
     this.foodImg = new Image();
     this.keyPressed = [];
-    this.worker = new Worker('./worker.ts');
+    this.worker = new Worker(new URL('../worker.ts', import.meta.url));
 
     this.CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
     this.CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;
@@ -237,7 +237,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     );
   }
 
+<<<<<<< HEAD
   async quit(newCoordinates: GameState['coordinates']) {
+=======
+  async quit(newCoordinates: t.GameState['coordinates']) {
+>>>>>>> offscreen
     if (this.state.status !== 'playing' && this.state.status !== 'gameover') {
       return;
     }
@@ -263,7 +267,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     this.start(this.state.status === 'gameover' ? newCoordinates : undefined);
   }
 
-  async start(newCoordinates?: GameState['coordinates']) {
+  async start(newCoordinates?: t.GameState['coordinates']) {
     if (this.state.status === 'playing' || !this.snakeInstance) return;
 
     await this.snakeInstance.clearCanvas();
@@ -427,7 +431,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
       const offscreen = this.canvas.current.transferControlToOffscreen();
 
-      const SnakeClass = Comlink.wrap<typeof Snake>(this.worker);
+      const SnakeClass = Comlink.wrap<t.SnakeWorkerConstructor>(this.worker);
 
       this.snakeInstance = await new SnakeClass(
         Comlink.transfer(offscreen, [offscreen]),
@@ -484,10 +488,10 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
           }}
           tabIndex={1}
           onKeyDown={this.handleKeys}
-          onKeyUp={e => {
-            this.keyPressed = this.keyPressed.filter(key => key !== e.key);
+          onKeyUp={(e) => {
+            this.keyPressed = this.keyPressed.filter((key) => key !== e.key);
           }}
-          onTouchStart={e => {
+          onTouchStart={(e) => {
             e.preventDefault();
             e.stopPropagation();
 
@@ -497,11 +501,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
               });
             }
           }}
-          onTouchMove={e => {
+          onTouchMove={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
-          onTouchEnd={async e => {
+          onTouchEnd={async (e) => {
             e.preventDefault();
             e.stopPropagation();
 

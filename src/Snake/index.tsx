@@ -1,4 +1,4 @@
-/// <reference path="../index.d.ts" />
+import * as t from '../types/bite-me';
 
 import * as React from 'react';
 import { initFoodPosition } from '../helper';
@@ -6,7 +6,7 @@ import { initFoodPosition } from '../helper';
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
 
-export default class SnakeGame extends React.Component<GameProps, GameState> {
+export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
   static defaultProps = {
     style: {
       backgroundColor: '#fafafa',
@@ -41,9 +41,45 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     ];
   }
 
+<<<<<<< HEAD
   constructor(props: GameProps) {
+=======
+  private initFoodPosition() {
+    const size = this.SNAKE_SIZE;
+
+    const startX =
+      Math.floor(
+        Math.random() *
+          (this.CANVAS_WIDTH / size - this.FOOD_SIZE / (this.FOOD_SIZE - size))
+      ) * size;
+
+    const startY =
+      Math.floor(
+        Math.random() *
+          (this.CANVAS_HEIGHT / size - this.FOOD_SIZE / (this.FOOD_SIZE - size))
+      ) * size;
+
+    return [startX, startY];
+  }
+
+  SNAKE_SIZE = 20;
+  FOOD_SIZE = 40;
+  SNAKE_FILL =
+    typeof this.props.snakeStyle?.color === 'string'
+      ? this.props.snakeStyle.color
+      : '#2a2a2a';
+
+  CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
+  CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;
+
+  timerId?: NodeJS.Timeout;
+  keyPressed: string[] = [];
+  foodImg?: HTMLImageElement;
+
+  constructor(props: t.GameProps) {
+>>>>>>> offscreen
     super(props);
-    this.foodImg = new Image();
+    this.foodImg = this.props.food.src ? new Image() : undefined;
 
     this.CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
     this.CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;
@@ -152,7 +188,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     this.drawText('fingers for help', verticalCenter + 135);
   }
 
-  drawSnake(newCoordinates?: GameState['coordinates']) {
+  drawSnake(newCoordinates?: t.GameState['coordinates']) {
     const context = this.canvas.current?.getContext('2d');
 
     let coordinates;
@@ -299,6 +335,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     const context = this.canvasContext();
 
+<<<<<<< HEAD
     if (!this.props.food.src) {
       const radius = this.FOOD_SIZE / 2;
       context.beginPath();
@@ -315,10 +352,14 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     } else {
       const foodSize = this.FOOD_SIZE - padding;
 
+=======
+    if (this.foodImg) {
+>>>>>>> offscreen
       context.drawImage(
         this.foodImg,
         x + padding / 2,
         y + padding / 2,
+<<<<<<< HEAD
         foodSize,
         foodSize
       );
@@ -327,6 +368,15 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = 'high';
 
+=======
+        width,
+        height
+      );
+
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
+    }
+>>>>>>> offscreen
     context.fillStyle = this.props.food.color ?? 'red';
   }
 
@@ -452,10 +502,12 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
   }
 
   startTimer(reset?: boolean) {
-    this.timerId = setInterval(
+    const newTimer = setInterval(
       () => this.advanceSnake(),
       reset ? 150 : Math.max(20, 150 - this.state.score * 5)
-    );
+    ) as unknown;
+
+    this.timerId = newTimer as NodeJS.Timeout;
   }
 
   stopTimer() {
@@ -473,7 +525,7 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     this.start(this.initPosition());
   }
 
-  start(newCoordinates?: GameState['coordinates']) {
+  start(newCoordinates?: t.GameState['coordinates']) {
     if (this.timerId) return;
 
     this.clearCanvas();
@@ -504,7 +556,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
     if (this.state.status !== 'playing') return;
 
     this.setState({
+<<<<<<< HEAD
       status: 'playing',
+=======
+      status: 'title',
+>>>>>>> offscreen
     });
 
     this.stopTimer();
@@ -580,7 +636,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
         break;
 
       case 'h':
+<<<<<<< HEAD
         if (['title', 'gameover', 'instructions'].includes(this.state.status)) {
+=======
+        if (this.state.status !== 'playing') {
+>>>>>>> offscreen
           this.drawInstructionsPage();
           this.setState({ status: 'instructions' });
         }
@@ -628,7 +688,11 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
 
     this.handleVolumeChange(0, 0.5);
 
+<<<<<<< HEAD
     if (this.props.food.src) {
+=======
+    if (this.foodImg && this.props.food.src) {
+>>>>>>> offscreen
       this.foodImg.src = this.props.food.src;
     }
   }
@@ -659,33 +723,49 @@ export default class SnakeGame extends React.Component<GameProps, GameState> {
           }}
           tabIndex={1}
           onKeyDown={this.handleKeys}
-          onKeyUp={e => {
-            this.keyPressed = this.keyPressed.filter(key => key !== e.key);
+          onKeyUp={(e) => {
+            this.keyPressed = this.keyPressed.filter((key) => key !== e.key);
           }}
-          onTouchStart={e => {
+          onTouchStart={(e) => {
             e.preventDefault();
             e.stopPropagation();
 
+<<<<<<< HEAD
             if (status === 'playing') {
+=======
+            if (this.state.status === 'playing') {
+>>>>>>> offscreen
               this.setState({
                 touch: [e.touches[0].clientX, e.touches[0].clientY],
               });
             }
           }}
-          onTouchMove={e => {
+          onTouchMove={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
-          onTouchEnd={e => {
+          onTouchEnd={(e) => {
             e.preventDefault();
             e.stopPropagation();
 
             // Show help page on two-finger tap
+<<<<<<< HEAD
             if (status !== 'playing' && e.changedTouches.length === 2) {
               return this.drawInstructionsPage();
             }
 
             if (status !== 'playing') return this.reset();
+=======
+            if (
+              this.state.status !== 'playing' &&
+              e.changedTouches.length === 2
+            ) {
+              this.setState({ status: 'instructions' });
+              return this.drawInstructionsPage();
+            }
+
+            if (this.state.status !== 'playing') return this.reset();
+>>>>>>> offscreen
 
             if (!this.state.touch) return;
             const { direction } = this.state;

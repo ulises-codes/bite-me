@@ -1,10 +1,11 @@
-/// <reference path="../index.d.ts" />
+import * as t from '../types/bite-me';
+
 export default function initFoodPosition({
   snakeSize,
   canvasHeight,
   canvasWidth,
   foodSize,
-}: InitFoodPositionProps) {
+}: t.InitFoodPositionProps) {
   const size = snakeSize;
 
   const startX =
