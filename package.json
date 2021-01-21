@@ -8,7 +8,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "typings": "dist/index.d.ts",
+  "typings": "dist/types/bite-me.d.ts",
   "exports": {
     "./offscreen": "./offscreen/index.js",
     "./snake": "./snake/index.js"
