@@ -2,6 +2,7 @@
   "include": ["src"],
   "exclude": ["node_modules", "dev", "dist"],
   "compilerOptions": {
+    "baseUrl": ".",
     "allowJs": true,
     "alwaysStrict": true,
     "declaration": true,
@@ -9,9 +10,9 @@
     "forceConsistentCasingInFileNames": true,
     "importHelpers": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react",
     "lib": ["dom", "es2017"],
-    "module": "esnext",
+    "module": "es2020",
     "moduleResolution": "node",
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
@@ -19,11 +20,9 @@
     "noUnusedParameters": true,
     "outDir": "./dist",
     "resolveJsonModule": true,
-    "rootDir": "./src",
     "skipLibCheck": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "strict": true,
-    "target": "esnext",
-    "baseUrl": "."
+    "target": "es6"
   }
 }

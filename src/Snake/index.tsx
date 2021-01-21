@@ -1,5 +1,4 @@
-/// <reference path="../types/SnakeTypes.d.ts" />
-import * as t from 'bite-me';
+import * as t from '../types/bite-me';
 
 import * as React from 'react';
 

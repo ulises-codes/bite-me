@@ -7,19 +7,22 @@ module.exports = {
     offscreen: {
       import: './offscreen/index.tsx',
       filename: './offscreen/index.js',
+      dependOn: ['helper', 'comlink'],
     },
     snake: {
       import: './snake/index.tsx',
       filename: './snake/index.js',
+      dependOn: 'helper',
     },
+    helper: {
+      import: './helper/index.ts',
+      filename: './helper/index.js',
+    },
+    comlink: 'comlink',
   },
-  devtool: 'inline-source-map',
+  // devtool: 'inline-source-map',
   module: {
     rules: [
-      // {
-      //   test: /\.worker\.ts$/,
-      //   use: { loader: 'worker-loader' },
-      // },
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
@@ -28,18 +31,22 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.d.ts'],
+    extensions: ['.tsx', '.ts'],
   },
   output: {
+    library: 'biteMe',
     libraryTarget: 'umd',
     path: path.resolve(__dirname, 'dist'),
   },
-  // optimization: {
-  //   splitChunks: {
-  //     chunks: 'all',
-  //   },
-  //   runtimeChunk: 'single',
-  // },
+  optimization: {
+    concatenateModules: false,
+    splitChunks: {
+      chunks: 'all',
+    },
+    runtimeChunk: {
+      name: (entrypoint) => `runtime~${entrypoint.name}`,
+    },
+  },
   externals: {
     react: 'react',
   },

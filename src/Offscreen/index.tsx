@@ -1,9 +1,7 @@
-import * as t from 'bite-me';
+import * as t from '../types/bite-me';
 
 import * as React from 'react';
 import * as Comlink from 'comlink';
-
-import Worker from 'worker-loader!./Worker';
 
 import { initFoodPosition } from '../helper';
 
@@ -50,8 +48,7 @@ export class SnakeGame extends React.Component<t.GameProps, t.GameState> {
     super(props);
     this.foodImg = new Image();
     this.keyPressed = [];
-    this.worker = new Worker();
-    // this.worker = new Worker('./worker.ts');
+    this.worker = new Worker(new URL('../worker.ts', import.meta.url));
 
     this.CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
     this.CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;

@@ -1,14 +1,9 @@
-/// <reference path="./assets.d.ts" />
-// import 'regenerator-runtime/runtime';
-
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { SnakeGame } from '../dist/offscreen';
+// import { SnakeGame } from '../dist/offscreen';
 
-// import OffscreenSnake from '../dist/offscreen.bundle';
-
-// import SnakeGame from '../src/snake';
-// import { SnakeGame as OffscreenSnake } from '../src/offscreen';
+// import { SnakeGame } from '../src/snake';
+import { SnakeGame } from '../src/offscreen';
 
 import ImageURL from './assets/food.png';
 import AudioURL from './assets/echo.mp3';

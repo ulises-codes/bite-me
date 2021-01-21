@@ -1,8 +1,7 @@
-/// <reference path="../types/SnakeTypes.d.ts" />
+import * as t from './types/bite-me';
 
-import * as t from 'bite-me';
 import * as Comlink from 'comlink';
-import { initFoodPosition } from '../helper';
+import { initFoodPosition } from './helper';
 
 export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
   implements t.SnakeWorkerInterface {
@@ -346,7 +345,7 @@ export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
       this.timeoutId = (setTimeout(async () => {
         requestAnimationFrame(cb);
         await this.advanceSnake();
-      }, 75) as unknown) as number;
+      }, 100) as unknown) as number;
     };
 
     this.timerId = requestAnimationFrame(cb);
