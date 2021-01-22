@@ -11,7 +11,18 @@
   "typings": "./index.d.ts",
   "module": "./dist/index.js",
   "files": [
-    "dist/*"
+    "dist",
+    "snake",
+    "offscreen"
+  ],
+  "keywords": [
+    "snake",
+    "bite-me",
+    "ulises himely",
+    "react game",
+    "html canvas",
+    "offscreen canvas",
+    "web workers"
   ],
   "engines": {
     "node": ">=10"
@@ -21,7 +32,7 @@
     "build": "webpack --mode production"
   },
   "peerDependencies": {
-    "react": ">=16"
+    "react": ">=17"
   },
   "prettier": {
     "printWidth": 80,

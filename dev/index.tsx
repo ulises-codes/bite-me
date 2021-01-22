@@ -1,7 +1,9 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-import SnakeGame from '../dist/offscreen';
+import SnakeGame from '@ulises-codes/bite-me/offscreen';
+
+// import SnakeGame from '../dist/offscreen';
 
 // import { SnakeGame } from '../dist';
 

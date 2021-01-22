@@ -1,0 +1,6 @@
+{
+  "internal": true,
+  "jsnext:main": "../dist/snake/index.js",
+  "module": "../dist/snake/index.js",
+  "types": "../dist/snake/index.d.ts"
+}
