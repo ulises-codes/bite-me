@@ -2,6 +2,7 @@ export interface SnakeWorkerConstructor {
   new (
     canvas: OffscreenCanvas,
     advanceSnake: AdvanceSnake,
+    initFoodPosition: InitFoodPosition,
     props: SnakeWorkerProps
   ): SnakeWorkerInterface;
 }
@@ -37,39 +38,35 @@ export interface SnakeWorkerInterface {
   drawGameOver: (score: number, cb: () => void) => void;
   clearPrevPosition: (x: number, y: number) => void;
   clearFood: (coordinates: GameState['coordinates']) => void;
-  eatFood: (
-    coordinates: GameState['coordinates']
-  ) => Promise<GameState['foodPosition']>;
+  eatFood: (coordinates: GameState['coordinates']) => GameState['foodPosition'];
   initGame: (snakeCoordinates: GameState['coordinates']) => void;
   initFood: (foodPosition: GameState['foodPosition']) => void;
-  initFoodPosition: (
-    props: InitFoodPositionProps
-  ) => Promise<GameState['foodPosition']>;
+  initFoodPosition: InitFoodPosition;
   startTimer: () => void;
   stopTimer: () => void;
 }
 
 export interface SnakeWorkerProps {
-  text: {
-    color?: string;
-    gameOverColor?: string;
-    subtitleColor?: string;
-    titleColor?: string;
-  };
   canvas: {
     height: number;
     width: number;
     backgroundColor: string;
+  };
+  food: {
+    imgSrc?: string;
+    color?: string;
+    size: number;
   };
   snake: {
     color?: string | string[];
     snakeFill: string;
     snakeSize: number;
   };
-  food: {
-    imgSrc?: string;
+  text: {
     color?: string;
-    size: number;
+    gameOverColor?: string;
+    subtitleColor?: string;
+    titleColor?: string;
   };
 }
 

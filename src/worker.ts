@@ -5,6 +5,7 @@ import * as Comlink from 'comlink';
 export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
   implements t.SnakeWorkerInterface {
   advanceSnake: () => Promise<void>;
+  initFoodPosition: t.InitFoodPosition;
   backgroundColor: string;
   canvasHeight: number;
   canvasWidth: number;
@@ -15,9 +16,6 @@ export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
   foodPadding: number;
   foodSize: number;
   gameOverColor: string;
-  initFoodPosition: (
-    props: t.InitFoodPositionProps
-  ) => Promise<t.GameState['foodPosition']>;
   keyPressed: string[];
   snakeFill: string;
   snakeColor: string | string[];
@@ -32,20 +30,16 @@ export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
   constructor(
     canvas: OffscreenCanvas,
     advanceSnake: () => Promise<void>,
+    initFoodPosition: t.InitFoodPosition,
     props: t.SnakeWorkerProps
   ) {
-    this.initFoodPosition = async (props: t.InitFoodPositionProps) => {
-      const mod = await import('./helper');
-      const position = mod.initFoodPosition;
-
-      return position(props);
-    };
+    this.advanceSnake = advanceSnake;
+    this.initFoodPosition = initFoodPosition;
 
     this.backgroundColor = props.canvas.backgroundColor;
     this.canvasHeight = props.canvas.height;
     this.canvasWidth = props.canvas.width;
     this.ctx = canvas.getContext('2d');
-    this.advanceSnake = advanceSnake;
     this.gameOverColor = props.text.gameOverColor ?? '#F26463';
     this.foodColor = props.food.color ?? '#2a2a2a';
     this.foodImgSrc = props.food.imgSrc;
@@ -283,18 +277,18 @@ export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
     }
   }
 
-  async eatFood(coordinates: t.GameState['coordinates']) {
+  eatFood(coordinates: t.GameState['coordinates']) {
     this.clearFood(coordinates);
 
-    const getNewFoodPosition = async () =>
-      await this.initFoodPosition({
+    const getNewFoodPosition = () =>
+      this.initFoodPosition({
         foodSize: this.foodSize,
         snakeSize: this.snakeSize,
         canvasWidth: this.canvasHeight,
         canvasHeight: this.canvasHeight,
       });
 
-    let [newX, newY] = await getNewFoodPosition();
+    let [newX, newY] = getNewFoodPosition();
 
     const checkPosition = () => {
       const columns = Math.floor(this.foodSize / this.snakeSize);
@@ -325,7 +319,7 @@ export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
     };
 
     while (checkPosition()) {
-      [newX, newY] = await getNewFoodPosition();
+      [newX, newY] = getNewFoodPosition();
     }
 
     this.drawFood([newX, newY]);
