@@ -3,13 +3,6 @@ import * as ReactDOM from 'react-dom';
 
 import SnakeGame from '@ulises-codes/bite-me/snake';
 
-// import SnakeGame from '../dist/offscreen';
-
-// import { SnakeGame } from '../dist';
-
-// import { SnakeGame } from '../src/offscreen';
-// import { SnakeGame } from '../src/snake';
-
 import ImageURL from './assets/food.png';
 import AudioURL from './assets/echo.mp3';
 import DingURL from './assets/ding.mp3';
