@@ -4,8 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "install": "rm -rf dist .cache  && npm i ../ulises-codes-bite-me-4.0.0.tgz && parcel ./index.html --https --no-cache  --log-level 5 --open 'Google Chrome'",
-    "start": "parcel ./index.html --log-level 5 --open 'Google Chrome' --no-cache --no-hmr --https"
+    "install": "rm -rf dist .cache  && npm i ../ulises-codes-bite-me-5.0.2.tgz && parcel ./index.html --https --no-cache  --open 'Google Chrome'",
+    "start": "parcel ./index.html --open 'Google Chrome' --no-cache --no-hmr --https"
   },
   "browserslist": [
     "since 2017-06"
@@ -20,6 +20,6 @@
     "typescript": "^4.1.3"
   },
   "dependencies": {
-    "@ulises-codes/bite-me": "file:../ulises-codes-bite-me-4.0.0.tgz"
+    "@ulises-codes/bite-me": "file:../ulises-codes-bite-me-5.0.2.tgz"
   }
 }

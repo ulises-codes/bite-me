@@ -32,8 +32,8 @@
   },
   "scripts": {
     "types": "tsc --project tsconfig.json",
-    "build": "rm -rf dist && npm run types && parcel build --no-source-maps ./src/offscreen.tsx ./src/snake.tsx --public-url ./",
-    "start": "rm -rf dist && npm run types && parcel watch  ./src/offscreen.tsx ./src/snake.tsx --no-cache --no-hmr --log-level 5 --public-url ./"
+    "build": "rm -rf dist && npm run types && parcel build --no-source-maps ./src/offscreen.tsx ./src/worker.ts ./src/snake.tsx --public-url ./",
+    "start": "rm -rf dist && npm run types && parcel watch  ./src/offscreen.tsx ./src/worker.ts ./src/snake.tsx --no-cache --no-hmr --public-url ./"
   },
   "peerDependencies": {
     "react": ">=17"
