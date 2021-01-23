@@ -420,7 +420,7 @@ export default class SnakeGame extends React.Component<
   }
 
   componentDidMount() {
-    const worker = new Worker('./worker.ts');
+    const worker = new Worker('./worker.ts', { type: 'module' });
 
     this.handleVolumeChange(0, 0.5);
 
