@@ -1,11 +1,12 @@
 import * as t from './bite-me';
 
+import { initFoodPosition } from './helper';
+
 import * as Comlink from 'comlink';
 
 export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
   implements t.SnakeWorkerInterface {
   advanceSnake: () => Promise<void>;
-  initFoodPosition: t.InitFoodPosition;
   backgroundColor: string;
   canvasHeight: number;
   canvasWidth: number;
@@ -30,11 +31,9 @@ export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
   constructor(
     canvas: OffscreenCanvas,
     advanceSnake: () => Promise<void>,
-    initFoodPosition: t.InitFoodPosition,
     props: t.SnakeWorkerProps
   ) {
     this.advanceSnake = advanceSnake;
-    this.initFoodPosition = initFoodPosition;
 
     this.backgroundColor = props.canvas.backgroundColor;
     this.canvasHeight = props.canvas.height;
@@ -280,13 +279,14 @@ export const SnakeWorker: t.SnakeWorkerConstructor = class SnakeWorker
   eatFood(coordinates: t.GameState['coordinates']) {
     this.clearFood(coordinates);
 
-    const getNewFoodPosition = () =>
-      this.initFoodPosition({
+    const getNewFoodPosition = () => {
+      return initFoodPosition({
         foodSize: this.foodSize,
         snakeSize: this.snakeSize,
         canvasWidth: this.canvasHeight,
         canvasHeight: this.canvasHeight,
       });
+    };
 
     let [newX, newY] = getNewFoodPosition();
 

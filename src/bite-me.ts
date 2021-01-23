@@ -2,7 +2,6 @@ export interface SnakeWorkerConstructor {
   new (
     canvas: OffscreenCanvas,
     advanceSnake: AdvanceSnake,
-    initFoodPosition: InitFoodPosition,
     props: SnakeWorkerProps
   ): SnakeWorkerInterface;
 }
@@ -41,7 +40,6 @@ export interface SnakeWorkerInterface {
   eatFood: (coordinates: GameState['coordinates']) => GameState['foodPosition'];
   initGame: (snakeCoordinates: GameState['coordinates']) => void;
   initFood: (foodPosition: GameState['foodPosition']) => void;
-  initFoodPosition: InitFoodPosition;
   startTimer: () => void;
   stopTimer: () => void;
 }

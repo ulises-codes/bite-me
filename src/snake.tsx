@@ -1,6 +1,7 @@
-import * as t from '../bite-me';
+import * as t from './bite-me';
 
-import * as React from 'react';
+import React from 'react';
+import { initFoodPosition } from './helper';
 
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
@@ -21,7 +22,6 @@ export default class SnakeGame extends React.Component<
   timerId?: NodeJS.Timer;
   keyPressed: string[] = [];
   foodImg?: HTMLImageElement;
-  initFoodPosition?: t.InitFoodPosition;
 
   SNAKE_FILL: string;
   SNAKE_SIZE: number;
@@ -61,7 +61,12 @@ export default class SnakeGame extends React.Component<
       coordinates: this.initPosition(),
       direction: 'e',
       score: 0,
-      foodPosition: [],
+      foodPosition: initFoodPosition({
+        snakeSize: this.SNAKE_SIZE,
+        canvasHeight: this.CANVAS_HEIGHT,
+        canvasWidth: this.CANVAS_WIDTH,
+        foodSize: this.FOOD_SIZE,
+      }),
       muted: false,
       status: 'title',
       step: this.SNAKE_SIZE,
@@ -334,9 +339,7 @@ export default class SnakeGame extends React.Component<
   }
 
   eatFood() {
-    if (!this.initFoodPosition) return;
-
-    let [newX, newY] = this.initFoodPosition({
+    let [newX, newY] = initFoodPosition({
       snakeSize: this.SNAKE_SIZE,
       canvasHeight: this.CANVAS_HEIGHT,
       canvasWidth: this.CANVAS_WIDTH,
@@ -383,7 +386,7 @@ export default class SnakeGame extends React.Component<
     };
 
     while (checkPosition()) {
-      [newX, newY] = this.initFoodPosition({
+      [newX, newY] = initFoodPosition({
         snakeSize: this.SNAKE_SIZE,
         canvasHeight: this.CANVAS_HEIGHT,
         canvasWidth: this.CANVAS_WIDTH,
@@ -464,17 +467,7 @@ export default class SnakeGame extends React.Component<
 
     this.clearCanvas();
 
-    if (!this.initFoodPosition) return;
-
-    const foodPosition = this.initFoodPosition({
-      snakeSize: this.SNAKE_SIZE,
-      canvasHeight: this.CANVAS_HEIGHT,
-      canvasWidth: this.CANVAS_WIDTH,
-      foodSize: this.FOOD_SIZE,
-    });
-
     this.setState({
-      foodPosition,
       coordinates: newCoordinates ?? this.state.coordinates,
       direction: 'e',
       status: 'playing',
@@ -614,27 +607,19 @@ export default class SnakeGame extends React.Component<
   }
 
   componentDidMount() {
-    const init = async () => {
-      this.canvas.current?.focus();
+    this.canvas.current?.focus();
 
-      const mod = await import('../helper');
+    const canvasContext = this.canvas.current?.getContext('2d');
 
-      this.initFoodPosition = mod.initFoodPosition;
+    if (!canvasContext) return;
 
-      const canvasContext = this.canvas.current?.getContext('2d');
+    this.drawTitlePage();
 
-      if (!canvasContext) return;
+    this.handleVolumeChange(0, 0.5);
 
-      this.drawTitlePage();
-
-      this.handleVolumeChange(0, 0.5);
-
-      if (this.foodImg && this.props.food.src) {
-        this.foodImg.src = this.props.food.src;
-      }
-    };
-
-    init();
+    if (this.foodImg && this.props.food.src) {
+      this.foodImg.src = this.props.food.src;
+    }
   }
 
   componentWillUnmount() {

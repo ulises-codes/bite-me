@@ -1,6 +1,6 @@
 {
   "internal": true,
-  "jsnext:main": "../dist/offscreen/index.js",
-  "module": "../dist/offscreen/index.js",
-  "types": "../dist/offscreen/index.d.ts"
+  "jsnext:main": "../dist/offscreen.js",
+  "module": "../dist/offscreen.js",
+  "types": "../dist/offscreen.d.ts"
 }

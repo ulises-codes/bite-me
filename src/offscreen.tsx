@@ -1,7 +1,9 @@
-import * as t from '../bite-me';
+import * as t from './bite-me';
 
-import * as React from 'react';
+import React from 'react';
 import * as Comlink from 'comlink';
+
+import { initFoodPosition } from './helper';
 
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
@@ -21,11 +23,7 @@ export default class SnakeGame extends React.Component<
 
   keyPressed: string[];
   foodImg: HTMLImageElement;
-  initFoodPosition?: (
-    props: t.InitFoodPositionProps
-  ) => t.GameState['foodPosition'];
   snakeInstance?: Comlink.Remote<t.SnakeWorkerInterface>;
-  worker: Worker;
 
   SNAKE_FILL: string;
   SNAKE_SIZE: number;
@@ -52,7 +50,6 @@ export default class SnakeGame extends React.Component<
     super(props);
     this.foodImg = new Image();
     this.keyPressed = [];
-    this.worker = new Worker(new URL('../worker.ts', import.meta.url));
 
     this.CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
     this.CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;
@@ -67,7 +64,12 @@ export default class SnakeGame extends React.Component<
       coordinates: this.initPosition(),
       direction: 'e',
       score: 0,
-      foodPosition: [],
+      foodPosition: initFoodPosition({
+        snakeSize: this.SNAKE_SIZE,
+        canvasHeight: this.CANVAS_HEIGHT,
+        canvasWidth: this.CANVAS_WIDTH,
+        foodSize: this.FOOD_SIZE,
+      }),
       muted: false,
       status: 'title',
       step: 20,
@@ -283,7 +285,7 @@ export default class SnakeGame extends React.Component<
       this.audioRef.current.play();
     }
 
-    await await this.snakeInstance.drawSnake({
+    await this.snakeInstance.drawSnake({
       currentCoordinates: this.state.coordinates,
       newCoordinates,
     });
@@ -418,26 +420,22 @@ export default class SnakeGame extends React.Component<
   }
 
   componentDidMount() {
+    const worker = new Worker('./worker.ts');
+
     this.handleVolumeChange(0, 0.5);
+
     this.canvas.current?.focus();
 
     const init = async () => {
       if (!this.canvas.current) return;
 
-      const mod = await import('../helper');
-
-      this.initFoodPosition = mod.initFoodPosition;
-
       const offscreen = this.canvas.current.transferControlToOffscreen();
 
-      const SnakeClass = Comlink.wrap<t.SnakeWorkerConstructor>(this.worker);
-
-      if (!this.initFoodPosition) return;
+      const SnakeClass = Comlink.wrap<t.SnakeWorkerConstructor>(worker);
 
       this.snakeInstance = await new SnakeClass(
         Comlink.transfer(offscreen, [offscreen]),
         Comlink.proxy(() => this.advanceSnake()),
-        Comlink.proxy(this.initFoodPosition),
         {
           snake: {
             color: this.props.snakeStyle?.color,
@@ -458,14 +456,6 @@ export default class SnakeGame extends React.Component<
         }
       );
 
-      this.setState({
-        foodPosition: this.initFoodPosition({
-          snakeSize: this.SNAKE_SIZE,
-          canvasHeight: this.CANVAS_HEIGHT,
-          canvasWidth: this.CANVAS_WIDTH,
-          foodSize: this.FOOD_SIZE,
-        }),
-      });
       await this.snakeInstance.initGame(this.state.coordinates);
     };
 

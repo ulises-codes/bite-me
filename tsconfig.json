@@ -1,11 +1,12 @@
 {
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dev", "dist"],
+  "include": ["src"],
+  "exclude": ["node_modules", "example", "dist"],
   "compilerOptions": {
-    "baseUrl": ".",
+    "baseUrl": "./",
     "allowJs": true,
     "alwaysStrict": true,
     "declaration": true,
+    "emitDeclarationOnly": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": true,
@@ -24,5 +25,9 @@
     "sourceMap": false,
     "strict": true,
     "target": "es2017"
+  },
+  "paths": {
+    "~*": ["./src/*"],
+    "*": ["./src/*"]
   }
 }
