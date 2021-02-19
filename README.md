@@ -141,8 +141,8 @@ export default function MyComponent() {
             <td>Optional. The path to a sound that will play when the user loses a game.</td>
         </tr>
         <tr>
-        <td>publicPath </td>
-        <td>string</td>
+        <td>publicPath</td>
+        <td>URL | string</td>
         <td>OffscreenSnake component only. Public path to the web worker so the browser can find it.</td>
         </tr>
         <tr>
