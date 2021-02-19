@@ -102,6 +102,10 @@ export interface GameProps {
   };
 }
 
+export interface OffscreenGameProps extends GameProps {
+  publicPath: URL;
+}
+
 export interface DrawSnake {
   currentCoordinates: GameState['coordinates'];
   newCoordinates?: GameState['coordinates'];
