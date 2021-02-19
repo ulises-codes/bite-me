@@ -4,8 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "install": "rm -rf dist .cache  && npm i ../ulises-codes-bite-me-5.0.2.tgz && parcel ./index.html --https --no-cache  --open 'Google Chrome'",
-    "start": "parcel ./index.html --open 'Google Chrome' --no-cache --no-hmr --https"
+    "install": "rm -rf dist .cache  && npm i ../ulises-codes-bite-me-5.0.3.tgz && npm run start",
+    "start": "webpack serve --open 'Google Chrome' --mode development"
   },
   "browserslist": [
     "since 2017-06"
@@ -13,13 +13,16 @@
   "devDependencies": {
     "@types/react": "^16.9.11",
     "@types/react-dom": "^16.8.4",
-    "comlink": "^4.3.0",
-    "parcel-bundler": "^1.12.4",
+    "clean-webpack-plugin": "^3.0.0",
+    "html-webpack-plugin": "^4.5.2",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
-    "typescript": "^4.1.3"
+    "typescript": "^4.1.3",
+    "webpack": "^5.23.0",
+    "webpack-cli": "^4.5.0",
+    "webpack-dev-server": "^3.11.2"
   },
   "dependencies": {
-    "@ulises-codes/bite-me": "file:../ulises-codes-bite-me-5.0.2.tgz"
+    "@ulises-codes/bite-me": "file:../ulises-codes-bite-me-5.0.3.tgz"
   }
 }
