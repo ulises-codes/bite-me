@@ -1,16 +1,21 @@
-import * as t from './bite-me';
-
 import React from 'react';
 import * as Comlink from 'comlink';
 
 import { initFoodPosition } from './helper';
 
+import type {
+  OffscreenGameProps,
+  GameState,
+  SnakeWorkerInterface,
+  SnakeWorkerConstructor,
+} from './types';
+
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
 
 export default class SnakeGame extends React.Component<
-  t.GameProps,
-  t.GameState
+  OffscreenGameProps,
+  GameState
 > {
   static defaultProps = {
     style: {
@@ -23,7 +28,9 @@ export default class SnakeGame extends React.Component<
 
   keyPressed: string[];
   foodImg: HTMLImageElement;
-  snakeInstance?: Comlink.Remote<t.SnakeWorkerInterface>;
+  snakeInstance?: Comlink.Remote<SnakeWorkerInterface>;
+
+  worker: Worker;
 
   SNAKE_FILL: string;
   SNAKE_SIZE: number;
@@ -35,10 +42,10 @@ export default class SnakeGame extends React.Component<
     const size = this.SNAKE_SIZE;
 
     const startX =
-      Math.floor(Math.random() * (this.CANVAS_WIDTH / size)) * size;
+      Math.floor((Math.random() / 2) * (this.CANVAS_WIDTH / size)) * size;
 
     const startY =
-      Math.floor(Math.random() * (this.CANVAS_HEIGHT / size)) * size;
+      Math.floor((Math.random() / 2) * (this.CANVAS_HEIGHT / size)) * size;
 
     return [
       [startX, startY],
@@ -46,7 +53,7 @@ export default class SnakeGame extends React.Component<
     ];
   }
 
-  constructor(props: t.GameProps) {
+  constructor(props: OffscreenGameProps) {
     super(props);
     this.foodImg = new Image();
     this.keyPressed = [];
@@ -59,6 +66,8 @@ export default class SnakeGame extends React.Component<
       typeof this.props.snakeStyle?.color === 'string'
         ? this.props.snakeStyle.color
         : '#2a2a2a';
+
+    this.worker = new Worker(props.publicPath, { type: 'module' });
 
     this.state = {
       coordinates: this.initPosition(),
@@ -238,7 +247,7 @@ export default class SnakeGame extends React.Component<
     );
   }
 
-  async quit(newCoordinates: t.GameState['coordinates']) {
+  async quit(newCoordinates: GameState['coordinates']) {
     if (this.state.status !== 'playing' && this.state.status !== 'gameover') {
       return;
     }
@@ -264,7 +273,7 @@ export default class SnakeGame extends React.Component<
     this.start(this.state.status === 'gameover' ? newCoordinates : undefined);
   }
 
-  async start(newCoordinates?: t.GameState['coordinates']) {
+  async start(newCoordinates?: GameState['coordinates']) {
     if (this.state.status === 'playing' || !this.snakeInstance) return;
 
     await this.snakeInstance.clearCanvas();
@@ -420,18 +429,18 @@ export default class SnakeGame extends React.Component<
   }
 
   componentDidMount() {
-    const worker = new Worker('./worker.ts');
-
     this.handleVolumeChange(0, 0.5);
 
     this.canvas.current?.focus();
+
+    if (!this.props.publicPath) return;
 
     const init = async () => {
       if (!this.canvas.current) return;
 
       const offscreen = this.canvas.current.transferControlToOffscreen();
 
-      const SnakeClass = Comlink.wrap<t.SnakeWorkerConstructor>(worker);
+      const SnakeClass = Comlink.wrap<SnakeWorkerConstructor>(this.worker);
 
       this.snakeInstance = await new SnakeClass(
         Comlink.transfer(offscreen, [offscreen]),
@@ -464,6 +473,7 @@ export default class SnakeGame extends React.Component<
 
   componentWillUnmount() {
     this.snakeInstance?.stopTimer();
+    this.worker.terminate();
   }
 
   render() {
