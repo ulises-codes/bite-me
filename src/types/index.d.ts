@@ -103,7 +103,7 @@ export interface GameProps {
 }
 
 export interface OffscreenGameProps extends GameProps {
-  publicPath: URL;
+  publicPath: URL | string;
 }
 
 export interface DrawSnake {
