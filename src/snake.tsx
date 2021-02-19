@@ -1,15 +1,12 @@
-import * as t from './bite-me';
-
-import React from 'react';
+import * as React from 'react';
 import { initFoodPosition } from './helper';
+
+import type { GameProps, GameState } from './types';
 
 const DEFAULT_HEIGHT = 300;
 const DEFAULT_WIDTH = 300;
 
-export default class SnakeGame extends React.Component<
-  t.GameProps,
-  t.GameState
-> {
+export default class SnakeGame extends React.Component<GameProps, GameState> {
   static defaultProps = {
     style: {
       backgroundColor: '#fafafa',
@@ -44,7 +41,7 @@ export default class SnakeGame extends React.Component<
     ];
   }
 
-  constructor(props: t.GameProps) {
+  constructor(props: GameProps) {
     super(props);
     this.foodImg = this.props.food.src ? new Image() : undefined;
 
@@ -155,7 +152,7 @@ export default class SnakeGame extends React.Component<
     this.drawText('fingers for help', verticalCenter + 135);
   }
 
-  drawSnake(newCoordinates?: t.GameState['coordinates']) {
+  drawSnake(newCoordinates?: GameState['coordinates']) {
     const context = this.canvas.current?.getContext('2d');
 
     let coordinates;
@@ -462,7 +459,7 @@ export default class SnakeGame extends React.Component<
     this.start(this.initPosition());
   }
 
-  start(newCoordinates?: t.GameState['coordinates']) {
+  start(newCoordinates?: GameState['coordinates']) {
     if (this.timerId) return;
 
     this.clearCanvas();
