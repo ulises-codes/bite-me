@@ -8,32 +8,33 @@ This is a React Class Component that renders a pretty basic snake game on an HTM
 
 ### Basic Example
 
-        import SnakeGame from '@ulises-codes/bite-me/snake'
+```js
+import SnakeGame from '@ulises-codes/bite-me/snake';
+import FoodURL from './assets/food.png';
+import AudioURL from './assets/echo.mp3';
+import DingURL from './assets/ding.mp3';
+import GameOverURL from './assets/game-over.mp3';
 
-        import FoodURL from './assets/food.png';
-        import AudioURL from './assets/echo.mp3';
-        import DingURL from './assets/ding.mp3';
-        import GameOverURL from './assets/game-over.mp3';
-
-        export default function MyComponent() {
-            return (
-                <SnakeGame
-                    style={{ backgroundColor: '#24748F' }}
-                    food={{ src: ImageURL }}
-                    audioSrc={AudioURL}
-                    dingSrc={DingURL}
-                    gameOverSrc={GameOverURL}
-                    text={{
-                        color: '#2a2a2a',
-                        subtitleColor: '#fafafa',
-                        titleColor: '#F1DD6D',
-                    }}
-                    snakeStyle={{
-                        color: ['#BF43A1', '#F26463', '#F1DD6D', '#2BACB3'],
-                    }}
-                 />
-            )
-        }
+export default function MyComponent() {
+  return (
+    <SnakeGame
+      style={{ backgroundColor: '#24748F' }}
+      food={{ src: ImageURL }}
+      audioSrc={AudioURL}
+      dingSrc={DingURL}
+      gameOverSrc={GameOverURL}
+      text={{
+        color: '#2a2a2a',
+        subtitleColor: '#fafafa',
+        titleColor: '#F1DD6D',
+      }}
+      snakeStyle={{
+        color: ['#BF43A1', '#F26463', '#F1DD6D', '#2BACB3'],
+      }}
+    />
+  );
+}
+```
 
 <br />
 
@@ -43,15 +44,19 @@ If a browser supports OffscreenCanvas, you can import the OffscreenSnake compone
 
 The OffscreenSnake component accepts the same props as the regular Snake component.
 
-        import SnakeGame from '@ulises-codes/bite-me/offscreen'
+```js
+import SnakeGame from '@ulises-codes/bite-me/offscreen';
 
-        export default function MyComponent() {
-            return (
-                <OffscreenSnake
-                // Same props as Snake component
-                />
-            )
-        }
+export default function MyComponent() {
+  return (
+    <OffscreenSnake
+      // Takes same props as SnakeGame, plus the
+      // public path to the web worker
+      publicPath={new URL('@ulises-codes/bite-me/dist/worker', import.meta.url)}
+    />
+  );
+}
+```
 
 <br />
 
@@ -134,6 +139,11 @@ The OffscreenSnake component accepts the same props as the regular Snake compone
             <td>gameOverSrc</td>
             <td>string?</td>
             <td>Optional. The path to a sound that will play when the user loses a game.</td>
+        </tr>
+        <tr>
+        <td>publicPath </td>
+        <td>string</td>
+        <td>OffscreenSnake component only. Public path to the web worker so the browser can find it.</td>
         </tr>
         <tr>
             <td>text</td>
