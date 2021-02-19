@@ -6,7 +6,7 @@
     "allowJs": true,
     "alwaysStrict": true,
     "declaration": true,
-    "emitDeclarationOnly": true,
+    "emitDeclarationOnly": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": true,
@@ -25,9 +25,5 @@
     "sourceMap": false,
     "strict": true,
     "target": "es2017"
-  },
-  "paths": {
-    "~*": ["./src/*"],
-    "*": ["./src/*"]
   }
 }
