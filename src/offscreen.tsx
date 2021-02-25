@@ -18,11 +18,13 @@ import {
   SnakeDirection,
   FoodPosition,
   GameStatus,
+  NewPositionReturn,
 } from './types';
 
 import Canvas from './util/Canvas';
 
 const SNAKE_SIZE = 20;
+const STEP = 20;
 const FOOD_SIZE = 40;
 
 export default function SnakeGame({
@@ -56,8 +58,6 @@ export default function SnakeGame({
   const audioRef = useRef() as MutableRefObject<HTMLAudioElement>;
   const dingRef = useRef() as MutableRefObject<HTMLAudioElement>;
 
-  const step = 20;
-
   let keyPressed: string[] = [];
 
   const offscreen = useRef() as MutableRefObject<OffscreenCanvas>;
@@ -67,7 +67,7 @@ export default function SnakeGame({
     []
   );
 
-  const snakeWorkerMethods = wrap<SnakeWorkerProps>(snakeWorker);
+  const snakeMethods = wrap<SnakeWorkerProps>(snakeWorker);
 
   const canvasWorker: Worker = useMemo(
     () => new Worker(workerPaths.canvasWorker, { type: 'module' }),
@@ -80,11 +80,23 @@ export default function SnakeGame({
   >;
 
   useEffect(() => {
-    if (status === 'playing') {
-      snakeWorkerMethods.startTimer(proxy(advanceSnake));
-    } else {
-      snakeWorkerMethods.stopTimer();
-    }
+    const startTimer = async () => {
+      await snakeMethods.startTimer(proxy(advanceSnake), {
+        direction,
+        step: STEP,
+        coordinates: [...coordinates],
+        foodSize: FOOD_SIZE,
+        foodPosition: [...foodPosition],
+        canvasWidth: height,
+        canvasHeight: width,
+        snakeSize: SNAKE_SIZE,
+      });
+    };
+
+    const stopTimer = async () => await snakeMethods.stopTimer();
+
+    if (status === 'playing') startTimer();
+    else stopTimer();
   }, [status, coordinates]);
 
   useEffect(() => {
@@ -97,7 +109,6 @@ export default function SnakeGame({
 
       canvasMethods.current = await new CanvasWorkerClass(
         transfer(offscreen.current, [offscreen.current]),
-        proxy(() => advanceSnake()),
         {
           snake: {
             color: props.snakeStyle?.color,
@@ -123,12 +134,12 @@ export default function SnakeGame({
     initGame();
 
     return () => {
-      snakeWorkerMethods.stopTimer();
+      snakeMethods.stopTimer();
 
       CanvasWorkerClass[releaseProxy]();
       canvasMethods.current[releaseProxy]();
 
-      snakeWorkerMethods[releaseProxy]();
+      snakeMethods[releaseProxy]();
 
       canvasWorker.terminate();
       snakeWorker.terminate();
@@ -140,21 +151,8 @@ export default function SnakeGame({
     canvasMethods.current.drawSnake(coordinates);
   }, [props.snakeStyle.color]);
 
-  const advanceSnake = async () => {
-    const [lastX, lastY] = coordinates[coordinates.length - 1];
-
-    await canvasMethods.current.clearPrevPosition(lastX, lastY);
-
-    const { action, payload } = await snakeWorkerMethods.advance({
-      direction,
-      step,
-      coordinates: [...coordinates],
-      foodSize: FOOD_SIZE,
-      foodPosition: [...foodPosition],
-      canvasWidth: height,
-      canvasHeight: width,
-      snakeSize: SNAKE_SIZE,
-    });
+  const advanceSnake = async ({ action, payload }: NewPositionReturn) => {
+    const prevPosition = coordinates[coordinates.length - 1];
 
     if (action === 'gameover' || !payload) {
       gameOver();
@@ -162,9 +160,9 @@ export default function SnakeGame({
       return;
     }
 
-    if (action === 'eat') eatFood();
+    if (action === 'eat') await eatFood();
 
-    await canvasMethods.current.drawSnake(payload);
+    await canvasMethods.current.drawSnake(payload, prevPosition);
 
     setCoordinates(payload);
   };
@@ -175,12 +173,12 @@ export default function SnakeGame({
       dingRef.current?.play().catch(() => null);
     }
 
-    const newFoodPosition = await snakeWorkerMethods.eat({
+    const newFoodPosition = await snakeMethods.eat({
+      coordinates,
       snakeSize: SNAKE_SIZE,
       canvasHeight: height,
       canvasWidth: width,
       foodSize: FOOD_SIZE,
-      coordinates,
     });
 
     setFoodPosition(newFoodPosition);
