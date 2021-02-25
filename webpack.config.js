@@ -23,8 +23,6 @@ module.exports = {
       import: './src/offscreen.tsx',
       filename: 'offscreen.js',
     },
-    helper: './src/helper/index.ts',
-    hooks: './src/hooks/index.tsx',
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
