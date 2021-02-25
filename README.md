@@ -2,7 +2,7 @@
 
 ## A Snake Game
 
-This is a React Class Component that renders a pretty basic snake game on an HTML Canvas element. Why a class component and not hooks? I kind of missed classes and just wanted to get back to basics for this project. I may rewrite with hooks in the future.
+A React Component that uses Web Workers to play a simple snake game.
 
 <br />
 
@@ -40,6 +40,11 @@ export default function MyComponent() {
 
 ### Web Workers!
 
+This project includes two [Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers).
+
+- snakeWorker.js (SnakeGame and OffscreenGame components) handles most of the computations behind the snake's position and the game's timer
+- canvasWorker.js (OffscreenSnake component only) is handles the [Offscreen Canvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) for browser's that support it
+
 If a browser supports OffscreenCanvas, you can import the OffscreenSnake component, which offloads the canvas rendering logic to a web worker for a slight increase in performance and most of all, reliability.
 
 The OffscreenSnake component accepts the same props as the regular Snake component.
@@ -52,7 +57,17 @@ export default function MyComponent() {
     <OffscreenSnake
       // Takes same props as SnakeGame, plus the
       // public path to the web worker
-      publicPath={new URL('@ulises-codes/bite-me/dist/worker', import.meta.url)}
+
+      workers={{
+        snakeWorker: newURL(
+          '@ulises-codes/bite-me/dist/workers/snakeWorker',
+          import.meta.url
+        ),
+        canvasWorker: new URL(
+          '@ulises-codes/bite-me/dist/workers/canvasWorker',
+          import.meta.url
+        ),
+      }}
     />
   );
 }
@@ -139,11 +154,6 @@ export default function MyComponent() {
             <td>gameOverSrc</td>
             <td>string?</td>
             <td>Optional. The path to a sound that will play when the user loses a game.</td>
-        </tr>
-        <tr>
-        <td>publicPath</td>
-        <td>URL | string</td>
-        <td>OffscreenSnake component only. Public path to the web worker so the browser can find it.</td>
         </tr>
         <tr>
             <td>text</td>
