@@ -7,9 +7,13 @@ module.exports = {
     process.env.NODE_ENV === 'development' ? 'inline-source-map' : undefined,
   target: 'web',
   entry: {
-    worker: {
-      import: './src/worker.ts',
-      filename: 'worker.js',
+    canvasWorker: {
+      import: './src/workers/canvasWorker.ts',
+      filename: 'workers/canvasWorker.js',
+    },
+    snakeWorker: {
+      import: './src/workers/snakeWorker.ts',
+      filename: 'workers/snakeWorker.js',
     },
     snake: {
       import: './src/snake.tsx',
@@ -19,6 +23,8 @@ module.exports = {
       import: './src/offscreen.tsx',
       filename: 'offscreen.js',
     },
+    helper: './src/helper/index.ts',
+    hooks: './src/hooks/index.tsx',
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],

@@ -4,6 +4,9 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
   devtool: 'inline-source-map',
+  devServer: {
+    hot: false,
+  },
   target: 'web',
   module: {
     rules: [
@@ -33,9 +36,6 @@ module.exports = {
       inject: false,
       templateContent: ({ htmlWebpackPlugin }) => `
     <html>
-      <head>
-        ${htmlWebpackPlugin.tags.headTags}
-      </head>
       <body>
         <div id="root"></div>
         ${htmlWebpackPlugin.tags.bodyTags}

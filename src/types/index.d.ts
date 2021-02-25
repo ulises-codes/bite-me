@@ -1,13 +1,12 @@
-export interface SnakeWorkerConstructor {
+export interface CanvasWorkerConstructor {
   new (
     canvas: OffscreenCanvas,
     advanceSnake: AdvanceSnake,
-    props: SnakeWorkerProps
-  ): SnakeWorkerInterface;
+    props: CanvasWorkerProps
+  ): CanvasWorkerInterface;
 }
 
-export interface SnakeWorkerInterface {
-  backgroundColor: string;
+export interface CanvasWorkerInterface {
   canvasHeight: number;
   canvasWidth: number;
   ctx: OffscreenCanvasRenderingContext2D | null;
@@ -18,7 +17,6 @@ export interface SnakeWorkerInterface {
   foodSize: number;
   gameOverColor: string;
   keyPressed: string[];
-  snakeFill: string;
   snakeColor: string | string[];
   snakeSize: number;
   textColor: string;
@@ -30,21 +28,18 @@ export interface SnakeWorkerInterface {
   advanceSnake: () => Promise<void>;
   clearCanvas: () => void;
   drawText: (text: string, y: number, color: string, font: string) => void;
-  drawTitlePage: (coordinates: GameState['coordinates']) => void;
+  drawTitlePage: (coordinates: SnakeCoordinates) => void;
   drawInstructionsPage: () => void;
-  drawSnake: (props: DrawSnake) => void;
-  drawFood: ([x, y]: GameState['foodPosition']) => void;
+  drawSnake: (coordinates: SnakeCoordinates) => void;
+  drawFood: ([x, y]: FoodPosition) => void;
   drawGameOver: (score: number, cb: () => void) => void;
   clearPrevPosition: (x: number, y: number) => void;
-  clearFood: (coordinates: GameState['coordinates']) => void;
-  eatFood: (coordinates: GameState['coordinates']) => GameState['foodPosition'];
-  initGame: (snakeCoordinates: GameState['coordinates']) => void;
-  initFood: (foodPosition: GameState['foodPosition']) => void;
-  startTimer: () => void;
-  stopTimer: () => void;
+  clearFood: (coordinates: SnakeCoordinates) => void;
+  initGame: (snakeCoordinates: SnakeCoordinates) => void;
+  initFood: (foodPosition: FoodPosition) => void;
 }
 
-export interface SnakeWorkerProps {
+export interface CanvasWorkerProps {
   canvas: {
     height: number;
     width: number;
@@ -57,7 +52,6 @@ export interface SnakeWorkerProps {
   };
   snake: {
     color?: string | string[];
-    snakeFill: string;
     snakeSize: number;
   };
   text: {
@@ -68,13 +62,24 @@ export interface SnakeWorkerProps {
   };
 }
 
+export type SnakeCoordinates = number[][];
+export type FoodPosition = number[];
+export type SnakeDirection = 'n' | 'e' | 's' | 'w';
+
+export type GameStatus =
+  | 'title'
+  | 'playing'
+  | 'gameover'
+  | 'instructions'
+  | 'paused';
+
 export interface GameState {
-  coordinates: number[][];
-  direction: 'n' | 'e' | 's' | 'w';
-  foodPosition: number[];
+  coordinates: SnakeCoordinates;
+  direction: SnakeDirection;
+  foodPosition: FoodPosition;
   muted: boolean;
   score: number;
-  status: 'title' | 'playing' | 'gameover' | 'instructions' | 'paused';
+  status: GameStatus;
   step: number;
   touch?: number[];
   volume: number;
@@ -84,11 +89,11 @@ export interface GameProps {
   audioSrc?: string;
   dingSrc?: string;
   gameOverSrc?: string;
-  style?: { backgroundColor?: string };
+  style: { backgroundColor?: string };
   height?: number;
   width?: number;
-  snakeStyle?: {
-    color: string | string[];
+  snakeStyle: {
+    color?: string | string[];
   };
   food: {
     color?: string;
@@ -100,15 +105,19 @@ export interface GameProps {
     subtitleColor?: string;
     titleColor?: string;
   };
+  publicPath?: URL | string;
+  workerPaths: WorkerPaths;
 }
 
 export interface OffscreenGameProps extends GameProps {
-  publicPath: URL | string;
+  workerPaths: WorkerPaths & {
+    canvasWorker: URL | string;
+  };
 }
 
 export interface DrawSnake {
-  currentCoordinates: GameState['coordinates'];
-  newCoordinates?: GameState['coordinates'];
+  currentCoordinates: SnakeCoordinates;
+  newCoordinates?: SnakeCoordinates;
 }
 
 export interface InitFoodPositionProps {
@@ -118,8 +127,34 @@ export interface InitFoodPositionProps {
   foodSize: number;
 }
 
-export type InitFoodPosition = (
-  props: InitFoodPositionProps
-) => GameState['foodPosition'];
+export type InitFoodPosition = (props: InitFoodPositionProps) => FoodPosition;
 
 type AdvanceSnake = () => Promise<void>;
+type WorkerPaths = {
+  snakeWorker: URL | string;
+  timerWorker: URL | string;
+};
+
+export interface SnakeWorkerProps {
+  timerId?: number;
+  timeoutId?: number;
+  startTimer: (advanceSnake: () => void) => void;
+  stopTimer: () => void;
+  advance(props: {
+    coordinates: SnakeCoordinates;
+    canvasWidth: number;
+    canvasHeight: number;
+    direction: SnakeDirection;
+    foodPosition: FoodPosition;
+    foodSize: number;
+    snakeSize: number;
+    step: number;
+  }): { action: 'gameover' | 'eat' | 'continue'; payload?: SnakeCoordinates };
+  eat(props: {
+    snakeSize: number;
+    canvasHeight: number;
+    canvasWidth: number;
+    foodSize: number;
+    coordinates: SnakeCoordinates;
+  }): FoodPosition;
+}

@@ -1,6 +1,0 @@
-{
-  "internal": true,
-  "jsnext:main": "../dist/worker.js",
-  "module": "../dist/worker.js",
-  "types": "../dist/worker.d.ts"
-}

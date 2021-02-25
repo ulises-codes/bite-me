@@ -1,19 +1,16 @@
-import { initFoodPosition } from './helper';
-
-import * as Comlink from 'comlink';
+import { expose } from 'comlink';
 
 import type {
-  SnakeWorkerConstructor,
-  SnakeWorkerInterface,
-  SnakeWorkerProps,
-  GameState,
-  DrawSnake,
-} from './types';
+  CanvasWorkerConstructor,
+  CanvasWorkerInterface,
+  CanvasWorkerProps,
+  FoodPosition,
+  SnakeCoordinates,
+} from '../types';
 
-export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
-  implements SnakeWorkerInterface {
+export const SnakeWorker: CanvasWorkerConstructor = class SnakeWorker
+  implements CanvasWorkerInterface {
   advanceSnake: () => Promise<void>;
-  backgroundColor: string;
   canvasHeight: number;
   canvasWidth: number;
   ctx: OffscreenCanvasRenderingContext2D | null;
@@ -24,7 +21,6 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
   foodSize: number;
   gameOverColor: string;
   keyPressed: string[];
-  snakeFill: string;
   snakeColor: string | string[];
   snakeSize: number;
   textColor: string;
@@ -37,11 +33,10 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
   constructor(
     canvas: OffscreenCanvas,
     advanceSnake: () => Promise<void>,
-    props: SnakeWorkerProps
+    props: CanvasWorkerProps
   ) {
     this.advanceSnake = advanceSnake;
 
-    this.backgroundColor = props.canvas.backgroundColor;
     this.canvasHeight = props.canvas.height;
     this.canvasWidth = props.canvas.width;
     this.ctx = canvas.getContext('2d');
@@ -52,7 +47,6 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
     this.foodSize = props.food.size;
     this.keyPressed = [];
     this.snakeColor = props.snake.color ?? '#2a2a2a';
-    this.snakeFill = props.snake.snakeFill;
     this.snakeSize = props.snake.snakeSize;
     this.textColor = props.text.color ?? '#2a2a2a';
     this.titleColor = props.text.titleColor ?? '#2a2a2a';
@@ -84,7 +78,7 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
     context.fillText(text, this.canvasWidth / 2 - Math.round(textSize / 2), y);
   }
 
-  drawTitlePage(coordinates: GameState['coordinates']) {
+  drawTitlePage(coordinates: SnakeCoordinates) {
     const context = this.ctx;
     if (!context) return;
 
@@ -95,7 +89,7 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
     this.initFood([10, 20]);
     this.initFood([this.canvasWidth - this.foodSize - 10, 20]);
 
-    this.drawSnake({ currentCoordinates: coordinates });
+    this.drawSnake(coordinates);
 
     // Draw title
     this.drawText('BITE ME', 55, this.titleColor, '40px courier');
@@ -156,39 +150,29 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
     this.drawText('Volume Down, Up: 2, 1', 285);
   }
 
-  drawSnake({ currentCoordinates, newCoordinates }: DrawSnake) {
+  drawSnake(coordinates: SnakeCoordinates) {
     const context = this.ctx;
 
-    let coordinates;
-
-    if (newCoordinates) {
-      coordinates = newCoordinates;
-    } else {
-      coordinates = currentCoordinates;
-    }
-
     if (!context) return;
-
-    const size = this.snakeSize;
-
-    context.strokeStyle = this.backgroundColor;
-    context.lineWidth = 2;
 
     const color = this.snakeColor;
 
     coordinates.forEach(([x, y], i) => {
       if (typeof color === 'string') {
-        context.fillStyle = this.snakeFill;
+        context.fillStyle = color;
       } else {
         context.fillStyle = color[i % color.length];
       }
 
-      context.fillRect(x, y, size, size);
-      context.strokeRect(x, y, size, size);
+      context.fillRect(x, y, this.snakeSize, this.snakeSize);
+      context.strokeStyle = 'transparent';
+
+      context.lineWidth = 0.01;
+      context.strokeRect(x, y, 0, 0);
     });
   }
 
-  drawFood([x, y]: GameState['foodPosition']) {
+  drawFood([x, y]: FoodPosition) {
     const padding = this.foodPadding;
 
     const context = this.ctx;
@@ -254,8 +238,6 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
     );
 
     cb();
-
-    this.stopTimer();
   }
 
   clearPrevPosition(x: number, y: number) {
@@ -264,7 +246,7 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
     this.ctx.clearRect(x, y, this.snakeSize, this.snakeSize);
   }
 
-  clearFood(coordinates: GameState['coordinates']) {
+  clearFood(coordinates: SnakeCoordinates) {
     const context = this.ctx;
 
     if (!context) return;
@@ -282,58 +264,7 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
     }
   }
 
-  eatFood(coordinates: GameState['coordinates']) {
-    this.clearFood(coordinates);
-
-    const getNewFoodPosition = () => {
-      return initFoodPosition({
-        foodSize: this.foodSize,
-        snakeSize: this.snakeSize,
-        canvasWidth: this.canvasHeight,
-        canvasHeight: this.canvasHeight,
-      });
-    };
-
-    let [newX, newY] = getNewFoodPosition();
-
-    const checkPosition = () => {
-      const columns = Math.floor(this.foodSize / this.snakeSize);
-      const newCoordinates = [];
-
-      for (let x = 0; x < columns; x++) {
-        for (let y = 0; y < columns; y++) {
-          if (x === 0 && y === 0) {
-            newCoordinates.push([newX, newY]);
-            continue;
-          }
-          newCoordinates.push([
-            newX + x * (this.foodSize / columns),
-            newY + y * (this.foodSize / columns),
-          ]);
-        }
-      }
-
-      if (
-        !newCoordinates.every(
-          ([x, y]) => !coordinates.some(([a, b]) => x === a && y === b)
-        )
-      ) {
-        return true;
-      }
-
-      return false;
-    };
-
-    while (checkPosition()) {
-      [newX, newY] = getNewFoodPosition();
-    }
-
-    this.drawFood([newX, newY]);
-
-    return [newX, newY];
-  }
-
-  async initGame(snakeCoordinates: GameState['coordinates']) {
+  async initGame(snakeCoordinates: SnakeCoordinates) {
     if (this.foodImgSrc) {
       const blob = await fetch(this.foodImgSrc).then((res) => res.blob());
       this.foodImg = await createImageBitmap(blob);
@@ -342,33 +273,11 @@ export const SnakeWorker: SnakeWorkerConstructor = class SnakeWorker
     this.drawTitlePage(snakeCoordinates);
   }
 
-  async initFood(foodPosition: GameState['foodPosition']) {
+  initFood(foodPosition: FoodPosition) {
     // If new game, get position from state; otherwise, create new position
     const [x, y] = foodPosition;
     this.drawFood([x, y]);
   }
-
-  startTimer() {
-    const cb = () => {
-      if (this.timeoutId) clearTimeout(this.timeoutId);
-
-      this.timeoutId = (setTimeout(async () => {
-        requestAnimationFrame(cb);
-        await this.advanceSnake();
-      }, 100) as unknown) as number;
-    };
-
-    this.timerId = requestAnimationFrame(cb);
-  }
-
-  stopTimer() {
-    if (this.timerId) {
-      cancelAnimationFrame(this.timerId);
-    }
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
-    }
-  }
 };
 
-Comlink.expose(SnakeWorker);
+expose(SnakeWorker);

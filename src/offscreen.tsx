@@ -1,589 +1,305 @@
-import React from 'react';
-import * as Comlink from 'comlink';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
-import { initFoodPosition } from './helper';
+import type { MutableRefObject } from 'react';
 
-import type {
+import { wrap, proxy, transfer, releaseProxy } from 'comlink';
+
+import type { Remote } from 'comlink';
+
+import { initFoodPosition, initSnakePosition, handleTouchEnd } from './helper';
+
+import {
   OffscreenGameProps,
   GameState,
-  SnakeWorkerInterface,
-  SnakeWorkerConstructor,
+  CanvasWorkerConstructor,
+  SnakeWorkerProps,
+  CanvasWorkerInterface,
+  SnakeCoordinates,
+  SnakeDirection,
+  FoodPosition,
+  GameStatus,
 } from './types';
 
-const DEFAULT_HEIGHT = 300;
-const DEFAULT_WIDTH = 300;
-
-export default class SnakeGame extends React.Component<
-  OffscreenGameProps,
-  GameState
-> {
-  static defaultProps = {
-    style: {
-      backgroundColor: '#fafafa',
-      foodColor: '#fafafa',
-    },
-    height: DEFAULT_HEIGHT,
-    width: DEFAULT_WIDTH,
-  };
-
-  keyPressed: string[];
-  foodImg: HTMLImageElement;
-  snakeInstance?: Comlink.Remote<SnakeWorkerInterface>;
-
-  worker: Worker;
-
-  SNAKE_FILL: string;
-  SNAKE_SIZE: number;
-  FOOD_SIZE: number;
-  CANVAS_WIDTH: number;
-  CANVAS_HEIGHT: number;
-
-  private initPosition() {
-    const size = this.SNAKE_SIZE;
-
-    const startX =
-      Math.floor((Math.random() / 2) * (this.CANVAS_WIDTH / size)) * size;
-
-    const startY =
-      Math.floor((Math.random() / 2) * (this.CANVAS_HEIGHT / size)) * size;
-
-    return [
-      [startX, startY],
-      [startX - size, startY],
-    ];
-  }
-
-  constructor(props: OffscreenGameProps) {
-    super(props);
-    this.foodImg = new Image();
-    this.keyPressed = [];
-
-    this.CANVAS_WIDTH = this.props.width ?? DEFAULT_WIDTH;
-    this.CANVAS_HEIGHT = this.props.height ?? DEFAULT_HEIGHT;
-    this.SNAKE_SIZE = 20;
-    this.FOOD_SIZE = 40;
-    this.SNAKE_FILL =
-      typeof this.props.snakeStyle?.color === 'string'
-        ? this.props.snakeStyle.color
-        : '#2a2a2a';
-
-    this.worker = new Worker(props.publicPath, { type: 'module' });
-
-    this.state = {
-      coordinates: this.initPosition(),
-      direction: 'e',
-      score: 0,
-      foodPosition: initFoodPosition({
-        snakeSize: this.SNAKE_SIZE,
-        canvasHeight: this.CANVAS_HEIGHT,
-        canvasWidth: this.CANVAS_WIDTH,
-        foodSize: this.FOOD_SIZE,
-      }),
-      muted: false,
-      status: 'title',
-      step: 20,
-      touch: undefined,
-      volume: 0.5,
-    };
-    this.handleKeys = this.handleKeys.bind(this);
-  }
-
-  private canvas = React.createRef<HTMLCanvasElement>();
-
-  private audioRef = React.createRef<HTMLAudioElement>();
-  private dingRef = React.createRef<HTMLAudioElement>();
-
-  async advanceSnake() {
-    if (!this.snakeInstance) return;
-
-    const { coordinates, direction, step, foodPosition } = this.state;
-
-    const canvasHeight = this.CANVAS_HEIGHT;
-    const canvasWidth = this.CANVAS_WIDTH;
-
-    const [lastX, lastY] = coordinates[coordinates.length - 1];
-    const [firstX, firstY] = coordinates[0];
-
-    await this.snakeInstance.clearPrevPosition(lastX, lastY);
-
-    const [foodX, foodY] = foodPosition;
-
-    // Game ends if user touches canvas edges
-    if (
-      firstX + step > canvasWidth ||
-      firstX < 0 ||
-      firstY + step > canvasHeight ||
-      firstY < 0
-    ) {
-      return await this.gameOver();
-    }
-
-    if (coordinates.slice(1).some(([x, y]) => x === firstX && y === firstY)) {
-      return await this.gameOver();
-    }
-
-    switch (direction) {
-      case 'w':
-      case 'e': {
-        const vector = direction === 'e' ? 1 : -1;
-
-        if (
-          (firstX + step >= canvasWidth && direction === 'e') ||
-          (firstX <= 0 && direction === 'w')
-        ) {
-          return await this.gameOver();
-        }
-
-        if (
-          firstX + step > foodX &&
-          firstX < foodX + this.FOOD_SIZE &&
-          firstY + step > foodY &&
-          firstY < foodY + this.FOOD_SIZE
-        ) {
-          const newCoordinates = [
-            [coordinates[0][0] + step * vector, coordinates[0][1]],
-            ...coordinates,
-          ];
-
-          this.setState({
-            coordinates: newCoordinates,
-          });
-
-          await this.eatFood();
-
-          return await this.snakeInstance.drawSnake({
-            currentCoordinates: newCoordinates,
-          });
-        }
-
-        this.setState({
-          coordinates: [
-            [coordinates[0][0] + step * vector, coordinates[0][1]],
-            ...coordinates.slice(0, coordinates.length - 1),
-          ],
-        });
-
-        await this.snakeInstance.drawSnake({
-          currentCoordinates: this.state.coordinates,
-        });
-
-        break;
-      }
-      case 'n':
-      case 's': {
-        const vector = direction === 's' ? 1 : -1;
-
-        if (
-          (firstY + step >= canvasHeight && direction === 's') ||
-          (firstY - step < 0 && direction === 'n')
-        )
-          return await this.gameOver();
-
-        if (
-          firstX + step > foodX &&
-          firstX < foodX + this.FOOD_SIZE &&
-          firstY + step > foodY &&
-          firstY < foodY + this.FOOD_SIZE
-        ) {
-          const newCoordinates = [
-            [coordinates[0][0], coordinates[0][1] + step * vector],
-            ...coordinates,
-          ];
-
-          this.setState({
-            coordinates: newCoordinates,
-          });
-
-          await this.eatFood();
-
-          return await this.snakeInstance.drawSnake({
-            currentCoordinates: newCoordinates,
-          });
-        }
-
-        this.setState({
-          coordinates: [
-            [coordinates[0][0], coordinates[0][1] + step * vector],
-            ...coordinates.slice(0, coordinates.length - 1),
-          ],
-        });
-
-        await this.snakeInstance.drawSnake({
-          currentCoordinates: this.state.coordinates,
-        });
-
-        break;
-      }
-    }
-  }
-
-  async eatFood() {
-    if (!this.snakeInstance) return;
-
-    if (this.dingRef.current && this.props.dingSrc) {
-      this.dingRef.current.currentTime = 0;
-      this.dingRef.current?.play().catch(() => null);
-    }
-    const newXY = await this.snakeInstance.eatFood(this.state.coordinates);
-
-    this.setState({
-      foodPosition: newXY,
-      score: this.state.score + 1,
-    });
-  }
-
-  async gameOver() {
-    if (this.state.status !== 'playing' || !this.snakeInstance) return;
-
-    // Switch audio to game over sound
-    if (this.audioRef.current && this.props.gameOverSrc) {
-      this.audioRef.current.src = this.props.gameOverSrc;
-      this.audioRef.current.play().catch(() => null);
-    }
-
-    await this.snakeInstance.drawGameOver(
-      this.state.score,
-      Comlink.proxy(() => this.setState({ status: 'gameover' }))
-    );
-  }
-
-  async quit(newCoordinates: GameState['coordinates']) {
-    if (this.state.status !== 'playing' && this.state.status !== 'gameover') {
-      return;
-    }
-
-    if (this.state.status !== 'playing' || !this.snakeInstance) return;
-
-    this.setState({
-      status: 'title',
-      coordinates: newCoordinates,
-    });
-
-    this.audioRef.current?.pause();
-
-    await this.snakeInstance.stopTimer();
-    await this.snakeInstance.drawTitlePage(newCoordinates);
-  }
-
-  async reset() {
-    const newCoordinates = this.initPosition();
-
-    await this.snakeInstance?.stopTimer();
-
-    this.start(this.state.status === 'gameover' ? newCoordinates : undefined);
-  }
-
-  async start(newCoordinates?: GameState['coordinates']) {
-    if (this.state.status === 'playing' || !this.snakeInstance) return;
-
-    await this.snakeInstance.clearCanvas();
-
-    this.setState({
-      coordinates: newCoordinates ?? this.state.coordinates,
-      direction: 'e',
-      status: 'playing',
-      score: 0,
-    });
-
-    if (this.props.dingSrc && this.dingRef.current) {
-      this.dingRef.current.src = this.props.dingSrc;
-    }
-
-    if (this.props.audioSrc && this.audioRef.current) {
-      this.audioRef.current.src = this.props.audioSrc;
-      this.audioRef.current.play();
-    }
-
-    await this.snakeInstance.drawSnake({
-      currentCoordinates: this.state.coordinates,
-      newCoordinates,
-    });
-    await this.snakeInstance.initFood(this.state.foodPosition);
-
-    await this.snakeInstance.startTimer();
-  }
-
-  handleVolumeChange(direction: 1 | -1 | 0, newVol?: number) {
-    if (!this.audioRef.current || !this.dingRef.current) {
-      return;
-    }
-
-    const currentVolume = this.audioRef.current.volume;
-
-    const increment = currentVolume + 0.125 * direction;
-
-    const newVolume = newVol
-      ? newVol
-      : direction === -1
-      ? Math.max(0, increment)
-      : Math.min(1, increment);
-
-    this.audioRef.current.volume = newVolume;
-    this.dingRef.current.volume = newVolume;
-  }
-
-  directionChange(key: string) {
-    const { direction } = this.state;
-    switch (key) {
-      case 'ArrowDown':
-        if (
-          this.state.status === 'playing' &&
-          direction !== 'n' &&
-          direction !== 's'
-        ) {
-          this.setState({ direction: 's' });
-        }
-
-        break;
-      case 'ArrowRight':
-        if (
-          this.state.status === 'playing' &&
-          direction !== 'w' &&
-          direction !== 'e'
-        ) {
-          this.setState({ direction: 'e' });
-        }
-
-        break;
-
-      case 'ArrowLeft':
-        if (
-          this.state.status === 'playing' &&
-          direction !== 'e' &&
-          direction !== 'w'
-        ) {
-          this.setState({ direction: 'w' });
-        }
-
-        break;
-      case 'ArrowUp':
-        if (
-          this.state.status === 'playing' &&
-          direction !== 's' &&
-          direction !== 'n'
-        ) {
-          this.setState({ direction: 'n' });
-        }
-
-        break;
-    }
-  }
-
-  async pause() {
-    if (this.state.status === 'playing') {
-      await this.snakeInstance?.stopTimer();
-      this.setState({ status: 'paused' });
-      this.audioRef.current?.pause();
+import Canvas from './util/Canvas';
+
+const SNAKE_SIZE = 20;
+const FOOD_SIZE = 40;
+
+export default function SnakeGame({
+  style: { backgroundColor = '#fafafa' },
+  food: { color: foodColor = '#fafafa', src: foodSrc },
+  height = 300,
+  width = 300,
+  audioSrc,
+  dingSrc,
+  workerPaths,
+  ...props
+}: OffscreenGameProps): JSX.Element {
+  const [coordinates, setCoordinates] = useState<SnakeCoordinates>(
+    initSnakePosition({ canvasHeight: height, canvasWidth: width })
+  );
+  const [direction, setDirection] = useState<SnakeDirection>('e');
+  const [score, setScore] = useState<GameState['score']>(0);
+  const [foodPosition, setFoodPosition] = useState<FoodPosition>(
+    initFoodPosition({
+      snakeSize: SNAKE_SIZE,
+      canvasHeight: height,
+      canvasWidth: width,
+      foodSize: FOOD_SIZE,
+    })
+  );
+  const [status, setStatus] = useState<GameStatus>('title');
+
+  const [touch, setTouch] = useState<GameState['touch']>(undefined);
+
+  const canvas = useRef() as MutableRefObject<HTMLCanvasElement>;
+  const audioRef = useRef() as MutableRefObject<HTMLAudioElement>;
+  const dingRef = useRef() as MutableRefObject<HTMLAudioElement>;
+
+  const step = 20;
+
+  let keyPressed: string[] = [];
+
+  const offscreen = useRef() as MutableRefObject<OffscreenCanvas>;
+
+  const snakeWorker: Worker = useMemo(
+    () => new Worker(workerPaths.snakeWorker, { type: 'module' }),
+    []
+  );
+
+  const snakeWorkerMethods = wrap<SnakeWorkerProps>(snakeWorker);
+
+  const canvasWorker: Worker = useMemo(
+    () => new Worker(workerPaths.canvasWorker, { type: 'module' }),
+    []
+  );
+
+  const CanvasWorkerClass = wrap<CanvasWorkerConstructor>(canvasWorker);
+  const canvasMethods = useRef() as MutableRefObject<
+    Remote<CanvasWorkerInterface>
+  >;
+
+  useEffect(() => {
+    if (status === 'playing') {
+      snakeWorkerMethods.startTimer(proxy(advanceSnake));
     } else {
-      await this.snakeInstance?.startTimer();
-      this.setState({ status: 'playing' });
-      this.audioRef.current?.play();
+      snakeWorkerMethods.stopTimer();
     }
-  }
+  }, [status, coordinates]);
 
-  async handleKeys(e: React.KeyboardEvent<HTMLCanvasElement>): Promise<void> {
-    e.preventDefault();
+  useEffect(() => {
+    async function initGame() {
+      canvas.current.focus();
 
-    if (!this.snakeInstance) return;
+      if (!canvas.current) return;
 
-    this.keyPressed.push(e.key);
+      offscreen.current = canvas.current.transferControlToOffscreen();
 
-    switch (this.keyPressed[0]) {
-      case 'ArrowDown':
-      case 'ArrowRight':
-      case 'ArrowLeft':
-      case 'ArrowUp':
-        this.directionChange(e.key);
-        break;
-
-      case 'h':
-        if (['title', 'gameover', 'instructions'].includes(this.state.status)) {
-          await this.snakeInstance.drawInstructionsPage();
-          this.setState({ status: 'instructions' });
-        }
-        break;
-      case 'q':
-        await this.quit(this.initPosition());
-        break;
-      case ' ' /* Space */:
-        if (this.state.status !== 'playing' && this.state.status !== 'paused') {
-          this.reset();
-        }
-        break;
-
-      case 'p':
-        this.pause();
-        break;
-
-      case 'm':
-        this.setState({ muted: !this.state.muted });
-        break;
-
-      case '1':
-        this.handleVolumeChange(-1);
-        break;
-      case '2':
-        this.handleVolumeChange(1);
-        break;
-    }
-  }
-
-  componentDidMount() {
-    this.handleVolumeChange(0, 0.5);
-
-    this.canvas.current?.focus();
-
-    if (!this.props.publicPath) return;
-
-    const init = async () => {
-      if (!this.canvas.current) return;
-
-      const offscreen = this.canvas.current.transferControlToOffscreen();
-
-      const SnakeClass = Comlink.wrap<SnakeWorkerConstructor>(this.worker);
-
-      this.snakeInstance = await new SnakeClass(
-        Comlink.transfer(offscreen, [offscreen]),
-        Comlink.proxy(() => this.advanceSnake()),
+      canvasMethods.current = await new CanvasWorkerClass(
+        transfer(offscreen.current, [offscreen.current]),
+        proxy(() => advanceSnake()),
         {
           snake: {
-            color: this.props.snakeStyle?.color,
-            snakeFill: this.SNAKE_FILL,
-            snakeSize: this.SNAKE_SIZE,
+            color: props.snakeStyle?.color,
+            snakeSize: SNAKE_SIZE,
           },
           canvas: {
-            height: this.CANVAS_HEIGHT,
-            width: this.CANVAS_WIDTH,
-            backgroundColor: this.props.style?.backgroundColor ?? '#fafafa',
+            height,
+            width,
+            backgroundColor,
           },
-          text: { ...this.props.text },
+          text: { ...props.text },
           food: {
-            color: this.props.food.color,
-            imgSrc: this.props.food.src,
-            size: this.FOOD_SIZE,
+            color: foodColor,
+            imgSrc: foodSrc,
+            size: FOOD_SIZE,
           },
         }
       );
 
-      await this.snakeInstance.initGame(this.state.coordinates);
+      await canvasMethods.current.initGame(coordinates);
+    }
+
+    initGame();
+
+    return () => {
+      snakeWorkerMethods.stopTimer();
+
+      CanvasWorkerClass[releaseProxy]();
+      canvasMethods.current[releaseProxy]();
+
+      snakeWorkerMethods[releaseProxy]();
+
+      canvasWorker.terminate();
+      snakeWorker.terminate();
     };
+  }, []);
 
-    init();
-  }
+  useEffect(() => {
+    if (!canvasMethods.current) return;
+    canvasMethods.current.drawSnake(coordinates);
+  }, [props.snakeStyle.color]);
 
-  componentWillUnmount() {
-    this.snakeInstance?.stopTimer();
-    this.worker.terminate();
-  }
+  const advanceSnake = async () => {
+    const [lastX, lastY] = coordinates[coordinates.length - 1];
 
-  render() {
-    const { audioSrc, dingSrc, style } = this.props;
-    const { muted, status } = this.state;
+    await canvasMethods.current.clearPrevPosition(lastX, lastY);
 
-    return (
-      <div
-        style={{
-          height: this.CANVAS_HEIGHT,
-          width: this.CANVAS_WIDTH,
-        }}
-      >
-        <canvas
-          height={this.CANVAS_HEIGHT}
-          width={this.CANVAS_WIDTH}
-          ref={this.canvas}
-          style={{
-            backgroundColor: style?.backgroundColor ?? '#fafafa',
-            outline: 'none',
-            touchAction: 'none',
-          }}
-          tabIndex={1}
-          onKeyDown={this.handleKeys}
-          onKeyUp={(e) => {
-            this.keyPressed = this.keyPressed.filter((key) => key !== e.key);
-          }}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
+    const { action, payload } = await snakeWorkerMethods.advance({
+      direction,
+      step,
+      coordinates: [...coordinates],
+      foodSize: FOOD_SIZE,
+      foodPosition: [...foodPosition],
+      canvasWidth: height,
+      canvasHeight: width,
+      snakeSize: SNAKE_SIZE,
+    });
 
-            if (status === 'playing') {
-              this.setState({
-                touch: [e.touches[0].clientX, e.touches[0].clientY],
-              });
-            }
-          }}
-          onTouchMove={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onTouchEnd={async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+    if (action === 'gameover' || !payload) {
+      gameOver();
 
-            // Show help page on two-finger tap
-            if (status === 'playing' && e.changedTouches.length === 2) {
-              if (this.snakeInstance) {
-                return await this.snakeInstance.drawInstructionsPage();
-              }
-            }
+      return;
+    }
 
-            if (status !== 'playing') return this.reset();
+    if (action === 'eat') eatFood();
 
-            if (!this.state.touch) return;
-            const { direction } = this.state;
+    await canvasMethods.current.drawSnake(payload);
 
-            const diffX = e.changedTouches[0].clientX - this.state.touch[0];
-            const diffY = e.changedTouches[0].clientY - this.state.touch[1];
+    setCoordinates(payload);
+  };
 
-            const diff =
-              Math.abs(diffX) > Math.abs(diffY)
-                ? diffX
-                : Math.abs(diffY) > Math.abs(diffX)
-                ? diffY
-                : 0;
+  const eatFood = async () => {
+    if (dingRef.current && dingSrc) {
+      dingRef.current.currentTime = 0;
+      dingRef.current?.play().catch(() => null);
+    }
 
-            if (diff === 0) return;
+    const newFoodPosition = await snakeWorkerMethods.eat({
+      snakeSize: SNAKE_SIZE,
+      canvasHeight: height,
+      canvasWidth: width,
+      foodSize: FOOD_SIZE,
+      coordinates,
+    });
 
-            if (diff === diffX && direction !== 'e' && direction !== 'w') {
-              if (diffX < 0) {
-                return this.setState({
-                  direction: 'w',
-                  touch: undefined,
-                });
-              } else {
-                return this.setState({
-                  direction: 'e',
-                  touch: undefined,
-                });
-              }
-            } else if (
-              diff === diffY &&
-              direction !== 'n' &&
-              direction !== 's'
-            ) {
-              if (diffY < 0) {
-                return this.setState({
-                  direction: 'n',
-                  touch: undefined,
-                });
-              } else {
-                return this.setState({
-                  direction: 's',
-                  touch: undefined,
-                });
-              }
-            }
-          }}
-        />
-        {audioSrc && (
-          <audio
-            src={audioSrc}
-            loop={status === 'playing'}
-            muted={muted}
-            ref={this.audioRef}
-          />
-        )}
-        {dingSrc && <audio muted={muted} ref={this.dingRef} />}
-      </div>
+    setFoodPosition(newFoodPosition);
+    setScore(score + 1);
+
+    await canvasMethods.current.clearFood([...coordinates]);
+    await canvasMethods.current.drawFood(newFoodPosition);
+  };
+
+  const gameOver = async () => {
+    if (status !== 'playing') return;
+
+    // Switch audio to game over sound
+    if (audioRef.current && props.gameOverSrc) {
+      audioRef.current.src = props.gameOverSrc;
+      audioRef.current.play().catch(() => null);
+    }
+
+    await canvasMethods.current.drawGameOver(
+      score,
+      proxy(() => setStatus('gameover'))
     );
-  }
+  };
+
+  const quit = async (newCoordinates: SnakeCoordinates) => {
+    if (status !== 'playing' && status !== 'gameover') {
+      return;
+    }
+
+    if (status !== 'playing') return;
+
+    setStatus('title');
+    setCoordinates(newCoordinates);
+
+    audioRef.current?.pause();
+
+    await canvasMethods.current.drawTitlePage(newCoordinates);
+  };
+
+  const reset = () => {
+    const newCoordinates = initSnakePosition({
+      canvasHeight: height,
+      canvasWidth: width,
+    });
+
+    start(newCoordinates);
+  };
+
+  const start = async (newCoordinates: SnakeCoordinates) => {
+    if (status === 'playing') return;
+
+    if (dingSrc && dingRef.current) {
+      dingRef.current.src = dingSrc;
+    }
+
+    if (audioSrc && audioRef.current) {
+      audioRef.current.src = audioSrc;
+      audioRef.current.play();
+    }
+
+    await canvasMethods.current.clearCanvas();
+
+    await canvasMethods.current.drawSnake([...newCoordinates]);
+    await canvasMethods.current.initFood([...foodPosition]);
+
+    setCoordinates(newCoordinates);
+    setDirection('e');
+    setScore(0);
+    setStatus('playing');
+  };
+
+  return (
+    <Canvas
+      {...{
+        direction,
+        status,
+        height,
+        width,
+        backgroundColor,
+        keyPressed,
+        audioRef,
+        audioSrc,
+        dingRef,
+        dingSrc,
+      }}
+      drawInstructions={async () => {
+        await canvasMethods.current.drawInstructionsPage();
+      }}
+      quit={() =>
+        quit(
+          initSnakePosition({
+            snakeSize: SNAKE_SIZE,
+            canvasHeight: height,
+            canvasWidth: width,
+          })
+        )
+      }
+      setDirection={(newDir) => setDirection(newDir)}
+      setTouch={(touches) => setTouch(touches)}
+      setStatus={(newStatus) => setStatus(newStatus)}
+      reset={reset}
+      canvasRef={canvas}
+      onTouchEnd={async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Show help page on two-finger tap
+        if (status === 'playing' && e.changedTouches.length === 2) {
+          if (canvasMethods) {
+            return await canvasMethods.current.drawInstructionsPage();
+          }
+        }
+
+        const res = handleTouchEnd(e, status, direction, reset, touch);
+
+        if (res) setDirection(res);
+
+        setTouch(undefined);
+      }}
+    />
+  );
 }
