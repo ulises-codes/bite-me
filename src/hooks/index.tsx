@@ -1,4 +1,4 @@
-import { MutableRefObject } from 'react';
+import type { MutableRefObject } from 'react';
 import { GameStatus } from '../types';
 
 export const useVolume = (

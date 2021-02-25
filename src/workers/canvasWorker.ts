@@ -10,7 +10,6 @@ import type {
 
 export const SnakeWorker: CanvasWorkerConstructor = class SnakeWorker
   implements CanvasWorkerInterface {
-  advanceSnake: () => Promise<void>;
   canvasHeight: number;
   canvasWidth: number;
   ctx: OffscreenCanvasRenderingContext2D | null;
@@ -30,13 +29,7 @@ export const SnakeWorker: CanvasWorkerConstructor = class SnakeWorker
   timerId?: number;
   timeoutId?: number;
 
-  constructor(
-    canvas: OffscreenCanvas,
-    advanceSnake: () => Promise<void>,
-    props: CanvasWorkerProps
-  ) {
-    this.advanceSnake = advanceSnake;
-
+  constructor(canvas: OffscreenCanvas, props: CanvasWorkerProps) {
     this.canvasHeight = props.canvas.height;
     this.canvasWidth = props.canvas.width;
     this.ctx = canvas.getContext('2d');
@@ -150,25 +143,36 @@ export const SnakeWorker: CanvasWorkerConstructor = class SnakeWorker
     this.drawText('Volume Down, Up: 2, 1', 285);
   }
 
-  drawSnake(coordinates: SnakeCoordinates) {
+  drawSnake(coordinates: SnakeCoordinates, prevPosition?: number[]) {
     const context = this.ctx;
 
     if (!context) return;
+
+    const lineWidth = 1;
+
+    if (prevPosition) {
+      context.clearRect(
+        prevPosition[0] - lineWidth,
+        prevPosition[1] - lineWidth,
+        this.snakeSize + lineWidth * 2,
+        this.snakeSize + lineWidth * 2
+      );
+    }
 
     const color = this.snakeColor;
 
     coordinates.forEach(([x, y], i) => {
       if (typeof color === 'string') {
         context.fillStyle = color;
+        context.strokeStyle = color;
       } else {
         context.fillStyle = color[i % color.length];
+        context.strokeStyle = color[i % color.length];
       }
 
       context.fillRect(x, y, this.snakeSize, this.snakeSize);
-      context.strokeStyle = 'transparent';
 
-      context.lineWidth = 0.01;
-      context.strokeRect(x, y, 0, 0);
+      context.lineWidth = lineWidth;
     });
   }
 
@@ -240,7 +244,7 @@ export const SnakeWorker: CanvasWorkerConstructor = class SnakeWorker
     cb();
   }
 
-  clearPrevPosition(x: number, y: number) {
+  clearPrevPosition([x, y]: number[]) {
     if (!this.ctx) return;
 
     this.ctx.clearRect(x, y, this.snakeSize, this.snakeSize);

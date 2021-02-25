@@ -3,13 +3,15 @@ import { initFoodPosition } from '../helper';
 import type { SnakeCoordinates, SnakeWorkerProps } from '../types';
 
 const snakeWorker: SnakeWorkerProps = {
-  startTimer(advanceSnake: () => void) {
-    const cb = () => {
-      if (this.timeoutId) clearTimeout(this.timeoutId);
+  startTimer(advanceSnake, props) {
+    if (this.timeoutId) clearTimeout(this.timeoutId);
 
-      this.timeoutId = (setTimeout(() => {
+    const cb = () => {
+      const res = this.advance(props);
+
+      this.timeoutId = (setTimeout(async () => {
         requestAnimationFrame(cb);
-        advanceSnake();
+        await advanceSnake(res);
       }, 75) as unknown) as number;
     };
 

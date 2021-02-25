@@ -1,7 +1,6 @@
 export interface CanvasWorkerConstructor {
   new (
     canvas: OffscreenCanvas,
-    advanceSnake: AdvanceSnake,
     props: CanvasWorkerProps
   ): CanvasWorkerInterface;
 }
@@ -25,15 +24,14 @@ export interface CanvasWorkerInterface {
   timerId?: number;
   timeoutId?: number;
 
-  advanceSnake: () => Promise<void>;
   clearCanvas: () => void;
   drawText: (text: string, y: number, color: string, font: string) => void;
   drawTitlePage: (coordinates: SnakeCoordinates) => void;
   drawInstructionsPage: () => void;
-  drawSnake: (coordinates: SnakeCoordinates) => void;
+  drawSnake: (coordinates: SnakeCoordinates, prevPosition?: number[]) => void;
   drawFood: ([x, y]: FoodPosition) => void;
   drawGameOver: (score: number, cb: () => void) => void;
-  clearPrevPosition: (x: number, y: number) => void;
+  clearPrevPosition: (prevPosition: number[]) => void;
   clearFood: (coordinates: SnakeCoordinates) => void;
   initGame: (snakeCoordinates: SnakeCoordinates) => void;
   initFood: (foodPosition: FoodPosition) => void;
@@ -134,21 +132,31 @@ type WorkerPaths = {
   snakeWorker: URL | string;
 };
 
+export type NewPositionProps = {
+  coordinates: SnakeCoordinates;
+  canvasWidth: number;
+  canvasHeight: number;
+  direction: SnakeDirection;
+  foodPosition: FoodPosition;
+  foodSize: number;
+  snakeSize: number;
+  step: number;
+};
+
+export type NewPositionReturn = {
+  action: 'gameover' | 'eat' | 'continue';
+  payload?: SnakeCoordinates;
+};
+
 export interface SnakeWorkerProps {
   timerId?: number;
   timeoutId?: number;
-  startTimer: (advanceSnake: () => void) => void;
+  startTimer: (
+    advanceSnake: (props: NewPositionReturn) => Promise<void>,
+    props: NewPositionProps
+  ) => void;
   stopTimer: () => void;
-  advance(props: {
-    coordinates: SnakeCoordinates;
-    canvasWidth: number;
-    canvasHeight: number;
-    direction: SnakeDirection;
-    foodPosition: FoodPosition;
-    foodSize: number;
-    snakeSize: number;
-    step: number;
-  }): { action: 'gameover' | 'eat' | 'continue'; payload?: SnakeCoordinates };
+  advance(props: NewPositionProps): NewPositionReturn;
   eat(props: {
     snakeSize: number;
     canvasHeight: number;
