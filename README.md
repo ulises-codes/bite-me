@@ -31,6 +31,12 @@ export default function MyComponent() {
       snakeStyle={{
         color: ['#BF43A1', '#F26463', '#F1DD6D', '#2BACB3'],
       }}
+      workerPaths={{
+        snakeWorker: newURL(
+          '@ulises-codes/bite-me/dist/workers/snakeWorker',
+          import.meta.url
+        ),
+      }}
     />
   );
 }
@@ -58,7 +64,7 @@ export default function MyComponent() {
       // Takes same props as SnakeGame, plus the
       // public path to the web worker
 
-      workers={{
+      workerPaths={{
         snakeWorker: newURL(
           '@ulises-codes/bite-me/dist/workers/snakeWorker',
           import.meta.url
