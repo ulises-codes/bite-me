@@ -132,7 +132,6 @@ export type InitFoodPosition = (props: InitFoodPositionProps) => FoodPosition;
 type AdvanceSnake = () => Promise<void>;
 type WorkerPaths = {
   snakeWorker: URL | string;
-  timerWorker: URL | string;
 };
 
 export interface SnakeWorkerProps {
