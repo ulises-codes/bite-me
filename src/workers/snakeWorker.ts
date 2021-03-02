@@ -10,16 +10,16 @@ const snakeWorker: SnakeWorkerProps = {
       const res = this.advance(props);
 
       this.timeoutId = (setTimeout(async () => {
-        requestAnimationFrame(cb);
+        window.requestAnimationFrame(cb);
         await advanceSnake(res);
       }, 75) as unknown) as number;
     };
 
-    this.timerId = requestAnimationFrame(cb);
+    this.timerId = window.requestAnimationFrame(cb);
   },
   stopTimer() {
     if (this.timerId) {
-      cancelAnimationFrame(this.timerId);
+      window.cancelAnimationFrame(this.timerId);
     }
 
     if (this.timeoutId) {
