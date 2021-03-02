@@ -262,6 +262,8 @@ export default function SnakeGame({
       dingRef.current?.play().catch(() => null);
     }
 
+    clearFood();
+
     const [newX, newY] = await snakeMethods.eat({
       snakeSize: SNAKE_SIZE,
       canvasHeight: height,
@@ -273,7 +275,6 @@ export default function SnakeGame({
     setFoodPosition([newX, newY]);
     setScore(score + 1);
 
-    clearFood();
     drawFood([newX, newY]);
   };
 

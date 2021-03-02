@@ -4,22 +4,31 @@ import type { SnakeCoordinates, SnakeWorkerProps } from '../types';
 
 const snakeWorker: SnakeWorkerProps = {
   startTimer(advanceSnake, props) {
-    if (this.timeoutId) clearTimeout(this.timeoutId);
+    if ('requestAnimationFrame' in self) {
+      if (this.timeoutId) clearTimeout(this.timeoutId);
 
-    const cb = () => {
-      const res = this.advance(props);
+      const cb = () => {
+        const res = this.advance(props);
 
-      this.timeoutId = (setTimeout(async () => {
-        window.requestAnimationFrame(cb);
+        this.timeoutId = (setTimeout(async () => {
+          requestAnimationFrame(cb);
+          await advanceSnake(res);
+        }, 75) as unknown) as number;
+      };
+
+      this.timerId = requestAnimationFrame(cb);
+    } else {
+      const newTimer = setTimeout(async () => {
+        const res = this.advance(props);
         await advanceSnake(res);
-      }, 75) as unknown) as number;
-    };
+      }, 75) as unknown;
 
-    this.timerId = window.requestAnimationFrame(cb);
+      this.timeoutId = newTimer as number;
+    }
   },
   stopTimer() {
     if (this.timerId) {
-      window.cancelAnimationFrame(this.timerId);
+      cancelAnimationFrame(this.timerId);
     }
 
     if (this.timeoutId) {
