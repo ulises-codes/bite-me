@@ -49,7 +49,7 @@ export default function MyComponent() {
 This project includes two [Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers).
 
 - snakeWorker.js (SnakeGame and OffscreenGame components) handles most of the computations behind the snake's position and the game's timer
-- canvasWorker.js (OffscreenSnake component only) is handles the [Offscreen Canvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) for browser's that support it
+- canvasWorker.js (OffscreenSnake component only) is handles the [Offscreen Canvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) for browsers that support it
 
 If a browser supports OffscreenCanvas, you can import the OffscreenSnake component, which offloads the canvas rendering logic to a web worker for a slight increase in performance and most of all, reliability.
 
